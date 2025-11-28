@@ -1,10 +1,45 @@
 {
-    "scripts": {
-        "calc.ts": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" src/calc.ts"
-    },
-    "devDependencies": {
-        "@types/node": "^24.3.1",
-        "ts-node": "^10.9.2",
-        "typescript": "^5.9.2"
-    }
+  "name": "lab1",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lab2": "npx tsx src/lab2.test.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "preso": "ts-node src/preso_demo.ts",
+    "calc": "ts-node src/calc.ts",
+    "lint:css": "stylelint \"**/*.{css,scss}\"",
+    "lint:css:fix": "stylelint \"**/*.{css,scss}\" --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "postcss-scss": "^4.0.9",
+    "prettier": "^3.6.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "stylelint": "^14.16.1",
+    "stylelint-config-prettier": "^9.0.5",
+    "stylelint-config-standard": "^29.0.0",
+    "stylelint-config-standard-scss": "^16.0.0",
+    "stylelint-prettier": "^3.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.0",
+    "vite": "^7.1.7"
+  }
 }

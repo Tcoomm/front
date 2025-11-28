@@ -1,0 +1,136 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.stage {
+    width: 960px;
+    /* 16:9 рабочая область */
+    height: 540px;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    background-color: #f8f8f8;
+    position: relative;
+    overflow: hidden;
+}
+
+.slide {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.element {
+    z-index: 1;
+    position: absolute;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+}
+
+.selected {
+    z-index: 5000;
+    outline: 3px solid black;
+}
+
+.text {
+    pointer-events: none;
+    font-size: 28px;
+    padding: 10px;
+    white-space: pre-wrap;
+}
+
+.img {
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    pointer-events: none;
+}
+
+.empty {
+    margin-top: 40px;
+    text-align: center;
+    color: #777;
+}
+
+.handle {
+    pointer-events: all;
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: black;
+    border: 2px solid white;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.handle.tl {
+    top: -6px;
+    left: -6px;
+    cursor: nwse-resize;
+}
+
+.handle.tr {
+    top: -6px;
+    right: -6px;
+    cursor: nesw-resize;
+}
+
+.handle.bl {
+    bottom: -6px;
+    left: -6px;
+    cursor: nesw-resize;
+}
+
+.handle.br {
+    bottom: -6px;
+    right: -6px;
+    cursor: nwse-resize;
+}
+
+/* top middle */
+.handle.tm {
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+/* bottom middle */
+.handle.bm {
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+/* middle left */
+.handle.ml {
+    top: 50%;
+    left: -6px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}
+
+/* middle right */
+.handle.mr {
+    top: 50%;
+    right: -6px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}

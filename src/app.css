@@ -1,0 +1,30 @@
+/* Общий ресет */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, Arial, sans-serif;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #ffffff;
+}
+
+/* Верхняя панель — заголовок */
+.header {
+  flex-shrink: 0;
+}
+
+/* Основная сетка: список слева — рабочая область справа */
+.grid {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+  gap: 16px;
+}
+
+/* SlideList справа и Workspace слева сами имеют фиксированные width/height */

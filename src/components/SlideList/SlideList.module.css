@@ -1,0 +1,70 @@
+.root {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.slide {
+    user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+
+.title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Один элемент списка */
+.item {
+    padding: 10px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    cursor: grab;
+    transition: 0.15s;
+    border: 2px solid transparent;
+}
+
+.item:active {
+    cursor: grabbing;
+}
+
+.item:hover {
+    background: #e4e9ef;
+}
+
+/* Выбранный пользователем слайд */
+.active {
+    border-color: #4a8bff;
+    background: #dfeaff;
+}
+
+/* Куда мы тащим (зона подсветки) */
+.over {
+    border-color: #ffab2d !important;
+    background: #fff4d6 !important;
+}
+
+/* Слайд, который мы тащим (делаем полупрозрачным) */
+.dragging {
+    opacity: 0.5;
+}
+
+.name {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.id {
+    font-size: 13px;
+    color: #666;
+}

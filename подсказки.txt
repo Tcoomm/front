@@ -1,0 +1,28 @@
+В package.json каретка ^ означает «разрешить MINOR и PATCH», тильда ~ — только «PATCH».
+PATCH — фиксы багов.
+
+MINOR — новые фичи, обратная совместимость сохраняется.
+
+MAJOR — ломающие изменения.
+
+2лаба
+npx eslint -v 
+Линтер — инструмент, который проверяет качество вашего кода.
+Линтеры приводят код к единому виду, находят (а в некоторых случаях еще и исправляют) ошибки и проверяют код на соответствие принятым правилам написания кода.
+npm run lint
+ESLint —  очень гибко настраивается, может расширяться за счет плагинов. Написан на node.js. Поддерживается многими IDE.
+
+PS C:\frontend\lab1> npx eslint -v
+v9.36.0
+PS C:\frontend\lab1> npx stylelint --version
+16.24.0
+PS C:\frontend\lab1> npx prettier -v
+3.6.2
+PS C:\frontend\lab1> npx stylelint "**/*.css"
+PS C:\frontend\lab1> npx prettier . --check
+Checking formatting...
+All matched files use Prettier code style!
+PS C:\frontend\lab1> npm run lab2
+
+3лаба
+npm run dev
