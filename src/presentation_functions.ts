@@ -19,8 +19,8 @@ import {
 } from "./types";
 
 /* ====== Константы размера слайда (как в CSS) ====== */
-const SLIDE_WIDTH = 960;
-const SLIDE_HEIGHT = 540;
+const SLIDE_WIDTH = 1200;
+const SLIDE_HEIGHT = 675;
 
 /* ============ вспомогалки для сетки ============ */
 

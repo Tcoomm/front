@@ -60,6 +60,7 @@ export type Selection = {
 export type Presentation = {
   id: ID;
   title: string;
+  ownerId?: string;
   slides: Slide[];
   selection: Selection;
 };

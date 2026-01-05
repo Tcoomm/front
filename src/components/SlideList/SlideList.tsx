@@ -1,88 +1,109 @@
-import React, { useState } from "react";
-import type { Slide, ID } from "../../types";
-import { dispatch, opReorderSlides } from "../../editor";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { reorderSlides, selectPresentation, selectSlide } from "../../store";
 
 import s from "./SlideList.module.css";
 
-type Props = {
-    slides: Slide[];
-    activeId: string | null;
-    onClick: (s: Slide) => void;
-};
+export default function SlideList() {
+    const [drag, setDrag] = useState<{ index: number; ids: string[] } | null>(null);
+    const [over, setOver] = useState<number | null>(null);
+    const [moved, setMoved] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const dispatch = useDispatch();
+    const presentation = useSelector(selectPresentation);
+    const slides = presentation.slides;
+    const activeId = presentation.selection.slideId ?? null;
+    const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-export default function SlideList({ slides, activeId, onClick }: Props) {
-    const [dragIndex, setDragIndex] = useState<number | null>(null);
-    const [overIndex, setOverIndex] = useState<number | null>(null);
+    // Keep at least one selected slide to drive group drag
+    useEffect(() => {
+        if (!selectedIds.length && activeId) {
+            setSelectedIds([activeId]);
+        }
+    }, [activeId, selectedIds.length]);
 
-    // Локальное выделение нескольких слайдов (через Shift)
-    const [selectedIds, setSelectedIds] = useState<ID[]>([]);
+    // Scroll the active slide into view when it changes (undo/redo)
+    useEffect(() => {
+        if (!activeId) return;
+        const node = itemRefs.current[activeId];
+        node?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, [activeId]);
 
-    function handleMouseDown(i: number, sl: Slide, e: React.MouseEvent<HTMLDivElement>) {
+    function orderByList(ids: string[]) {
+        const set = new Set(ids);
+        return slides.filter((sl) => set.has(sl.id)).map((sl) => sl.id);
+    }
+
+    function onDown(e: React.MouseEvent, i: number) {
+        const slideId = slides[i].id;
+        const base = selectedIds.length ? selectedIds : activeId ? [activeId] : [];
+
+        let next: string[];
         if (e.shiftKey) {
-            setSelectedIds(prev =>
-                prev.includes(sl.id) ? prev : [...prev, sl.id]
-            );
+            next = base.includes(slideId)
+                ? base.filter((x) => x !== slideId)
+                : [...base, slideId];
         } else {
-            setSelectedIds([sl.id]);
+            next = [slideId];
         }
 
-        setDragIndex(i);
+        const ordered = orderByList(next);
+
+        setSelectedIds(ordered);
+        setDrag({ index: i, ids: ordered });
+        setMoved(false);
         document.body.style.userSelect = "none";
-        e.stopPropagation();
     }
 
-    function handleMouseEnter(i: number) {
-        if (dragIndex !== null) {
-            setOverIndex(i);
+    function onEnter(i: number) {
+        if (drag !== null) {
+            if (i !== drag.index) setMoved(true);
+            setOver(i);
         }
     }
 
-    function handleMouseUp() {
-        if (
-            dragIndex !== null &&
-            overIndex !== null &&
-            dragIndex !== overIndex
-        ) {
-            // если выделено больше одного — двигаем всю пачку
-            const hasMulti = selectedIds.length > 1;
+    function onUp(e: React.MouseEvent) {
+        if (drag !== null && moved && over !== null) {
+            const idsToMove = drag.ids.length ? drag.ids : [slides[drag.index].id];
 
-            // какие слайды реально двигаем
-            const idsToMove: ID[] = hasMulti
-                ? selectedIds
-                : [slides[dragIndex].id];
+            const indices = idsToMove
+                .map((id) => slides.findIndex((s) => s.id === id))
+                .filter((i) => i >= 0);
 
-            dispatch(opReorderSlides, dragIndex, overIndex, idsToMove);
+            const targetId = slides[over]?.id ?? null;
+            dispatch(reorderSlides({ indices, targetId }));
         }
-
-        setDragIndex(null);
-        setOverIndex(null);
+        setDrag(null);
+        setOver(null);
+        setMoved(false);
         document.body.style.userSelect = "auto";
     }
 
     return (
-        <div className={s.root} onMouseUp={handleMouseUp}>
-            <h3 className={s.title}>Слайды</h3>
+        <div className={s.root} onMouseUp={onUp}>
+            <h3 className={s.title}>Slides</h3>
 
             <div className={s.list}>
                 {slides.map((sl, i) => {
-                    const isSelected = selectedIds.includes(sl.id);
-                    const isActive = sl.id === activeId || isSelected;
-                    const isOver = i === overIndex && dragIndex !== null;
-                    const isDragging = i === dragIndex;
+                    const active = sl.id === activeId || selectedIds.includes(sl.id);
+                    const overed = i === over && drag !== null;
+                    const dragging = drag !== null && i === drag.index;
 
                     return (
                         <div
                             key={sl.id}
-                            className={`${s.item} 
-                                ${isActive ? s.active : ""} 
-                                ${isOver ? s.over : ""} 
-                                ${isDragging ? s.dragging : ""}
-                            `}
-                            onMouseDown={(e) => handleMouseDown(i, sl, e)}
-                            onMouseEnter={() => handleMouseEnter(i)}
-                            onClick={() => onClick(sl)}
+                            ref={(el) => {
+                                itemRefs.current[sl.id] = el;
+                            }}
+                            className={`${s.item} ${active ? s.active : ""} ${overed ? s.over : ""
+                                } ${dragging ? s.dragging : ""}`}
+                            onMouseDown={(e) => onDown(e, i)}
+                            onMouseEnter={() => onEnter(i)}
+                            onClick={(e) => {
+                                dispatch(selectSlide(sl.id));
+                            }}
                         >
-                            <div className={s.name}>{sl.name} (№{i + 1})</div>
+                            <div className={s.name}>{sl.name} (#{i + 1})</div>
                             <div className={s.id}>id: {sl.id}</div>
                         </div>
                     );

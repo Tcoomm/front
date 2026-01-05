@@ -1,261 +1,235 @@
-import React, { useState, useEffect } from "react";
-import type { Slide, SlideElement, ID } from "../../types";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import type { SlideElement, ID } from "../../types";
+import {
+    moveElement,
+    resizeElement,
+    selectElements,
+    selectPresentation,
+    updateTextContent,
+} from "../../store";
+import { useDrag } from "../../hooks/useDrag";
+import { useResize } from "../../hooks/useResize";
 import s from "./Workspace.module.css";
 
-type Props = {
-    slide: Slide | null;
-    selectedIds: ID[];
-    onSelect: (el: SlideElement, multi: boolean) => void;
-    onMove: (id: ID, x: number, y: number) => void;
-    onResize: (id: ID, x: number, y: number, w: number, h: number) => void;
-};
+export default function Workspace() {
+    const dispatch = useDispatch();
+    const presentation = useSelector(selectPresentation);
+    const activeSlide = useMemo(() => {
+        const id = presentation.selection.slideId ?? null;
+        return id ? presentation.slides.find((s) => s.id === id) ?? null : null;
+    }, [presentation]);
+    const selectedIds = presentation.selection.elementIds;
+    const slideRef = useRef<HTMLDivElement | null>(null);
 
-export default function Workspace({
-    slide,
-    selectedIds,
-    onSelect,
-    onMove,
-    onResize,
-}: Props) {
-    const [drag, setDrag] = useState<{
-        ids: ID[];
-        startX: number;
-        startY: number;
-        start: Record<ID, { x: number; y: number }>;
-    } | null>(null);
+    const [editingId, setEditingId] = useState<ID | null>(null);
+    const [editingValue, setEditingValue] = useState("");
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-    const [resize, setResize] = useState<{
-        id: ID;
-        handle: string;
-        startX: number;
-        startY: number;
-        origX: number;
-        origY: number;
-        origW: number;
-        origH: number;
-    } | null>(null);
-
+    // auto-resize textarea to fit content within box
     useEffect(() => {
-        function move(ev: MouseEvent) {
-            if (!slide) return;
+        if (editingId && textareaRef.current) {
+            const ta = textareaRef.current;
+            ta.style.height = "auto";
+            ta.style.height = `${ta.scrollHeight}px`;
+        }
+    }, [editingId, editingValue]);
 
-            // ---- DRAG ----
-            if (drag) {
-                const dx = ev.clientX - drag.startX;
-                const dy = ev.clientY - drag.startY;
+    function handleSelect(el: SlideElement, multi: boolean) {
+        let ids = selectedIds;
 
-                drag.ids.forEach((id) => {
-                    const o = drag.start[id];
-                    onMove(id, o.x + dx, o.y + dy);
-                });
-            }
-
-            // ---- RESIZE ----
-            if (resize) {
-                const dx = ev.clientX - resize.startX;
-                const dy = ev.clientY - resize.startY;
-
-                let x = resize.origX;
-                let y = resize.origY;
-                let w = resize.origW;
-                let h = resize.origH;
-
-                switch (resize.handle) {
-                    case "tl":
-                        x = resize.origX + dx;
-                        y = resize.origY + dy;
-                        w = resize.origW - dx;
-                        h = resize.origH - dy;
-                        break;
-                    case "tr":
-                        y = resize.origY + dy;
-                        w = resize.origW + dx;
-                        h = resize.origH - dy;
-                        break;
-                    case "bl":
-                        x = resize.origX + dx;
-                        w = resize.origW - dx;
-                        h = resize.origH + dy;
-                        break;
-                    case "br":
-                        w = resize.origW + dx;
-                        h = resize.origH + dy;
-                        break;
-                    case "tm":
-                        y = resize.origY + dy;
-                        h = resize.origH - dy;
-                        break;
-                    case "bm":
-                        h = resize.origH + dy;
-                        break;
-                    case "ml":
-                        x = resize.origX + dx;
-                        w = resize.origW - dx;
-                        break;
-                    case "mr":
-                        w = resize.origW + dx;
-                        break;
-                }
-                const MIN_W = 20;
-                const MIN_H = 20;
-
-                if (w < MIN_W) {
-                    const diff = MIN_W - w;
-                    if (["tl", "ml", "bl"].includes(resize.handle)) {
-                        x -= diff;
-                    }
-                    w = MIN_W;
-                }
-
-                if (h < MIN_H) {
-                    const diff = MIN_H - h;
-                    if (["tl", "tm", "tr"].includes(resize.handle)) {
-
-                        y -= diff;
-                    }
-                    h = MIN_H;
-                }
-
-                onResize(resize.id, x, y, w, h);
-            }
+        if (multi) {
+            ids = ids.includes(el.id) ? ids.filter((x) => x !== el.id) : [...ids, el.id];
+        } else {
+            ids = [el.id];
         }
 
-        function stop() {
-            if (drag) setDrag(null);
-            if (resize) setResize(null);
-            document.body.style.userSelect = "auto";
+        dispatch(selectElements(ids));
+    }
+
+    function getElement(id: string) {
+        const el = activeSlide?.elements.find((e) => e.id === id);
+        return el
+            ? {
+                  x: el.position.x,
+                  y: el.position.y,
+                  w: el.size.width,
+                  h: el.size.height,
+              }
+            : { x: 0, y: 0, w: 0, h: 0 };
+    }
+
+    // DRAG
+    const { startDrag } = useDrag(selectedIds, getElement, (id, x, y) => {
+        if (!activeSlide) return;
+        dispatch(moveElement({ slideId: activeSlide.id, elId: id, x, y }));
+    });
+
+    // RESIZE
+    const { startResize } = useResize(getElement, (id, x, y, w, h) => {
+        if (!activeSlide) return;
+        dispatch(resizeElement({ slideId: activeSlide.id, elId: id, x, y, w, h }));
+    });
+
+    function startEditing(el: SlideElement) {
+        if (el.kind !== "text") return;
+        setEditingId(el.id);
+        setEditingValue(el.content);
+    }
+
+    function stopEditing(save: boolean, el: SlideElement) {
+        if (el.kind !== "text") return;
+        if (save && activeSlide) {
+            dispatch(updateTextContent({ slideId: activeSlide.id, elId: el.id, content: editingValue }));
         }
-
-        window.addEventListener("mousemove", move);
-        window.addEventListener("mouseup", stop);
-        return () => {
-            window.removeEventListener("mousemove", move);
-            window.removeEventListener("mouseup", stop);
-        };
-    }, [drag, resize, slide, onMove, onResize]);
-
-    // === Drag start
-    function startDrag(e: React.MouseEvent, el: SlideElement) {
-        if (resize) return;
-
-        const multi = e.shiftKey;
-        onSelect(el, multi);
-
-        const ids = multi ? [...new Set([...selectedIds, el.id])] : [el.id];
-
-        document.body.style.userSelect = "none";
-
-        setDrag({
-            ids,
-            startX: e.clientX,
-            startY: e.clientY,
-            start: Object.fromEntries(
-                ids.map((id) => {
-                    const elem = slide!.elements.find((e) => e.id === id)!;
-                    return [id, { x: elem.position.x, y: elem.position.y }];
-                })
-            ),
-        });
-
-        e.stopPropagation();
+        setEditingId(null);
+        setEditingValue("");
     }
 
-    // === Resize start
-    function startResize(e: React.MouseEvent, el: SlideElement, handle: string) {
-        const multi = e.shiftKey;
-        onSelect(el, multi);
-
-        document.body.style.userSelect = "none";
-        e.stopPropagation();
-
-        setResize({
-            id: el.id,
-            handle,
-            startX: e.clientX,
-            startY: e.clientY,
-            origX: el.position.x,
-            origY: el.position.y,
-            origW: el.size.width,
-            origH: el.size.height,
-        });
-    }
-
-    // === Background
-    let bg: React.CSSProperties = {};
-    if (slide) {
-        if (slide.background.kind === "color") {
-            bg.backgroundColor = slide.background.value;
-        } else if (slide.background.kind === "image") {
-            bg.backgroundImage = `url(${slide.background.src})`;
+    // background
+    const bg: React.CSSProperties = {};
+    if (activeSlide) {
+        if (activeSlide.background.kind === "color") {
+            bg.backgroundColor = activeSlide.background.value;
+        } else if (activeSlide.background.kind === "image") {
+            bg.backgroundImage = `url(${activeSlide.background.src})`;
             bg.backgroundSize = "cover";
             bg.backgroundPosition = "center";
         }
     }
 
+    // Keep the workspace in view when slide changes (undo/redo)
+    useEffect(() => {
+        if (!activeSlide) return;
+        slideRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        slideRef.current?.focus();
+    }, [activeSlide?.id]);
+
     return (
         <main className={s.root}>
-            <h3 className={s.title}>Рабочая область</h3>
+            <h3 className={s.title}>Workspace</h3>
 
             <div className={s.stage} style={bg}>
-                <div className={s.slide}>
-                    {slide &&
-                        slide.elements.map((el) => {
+                <div className={s.slide} tabIndex={-1} ref={slideRef}>
+                    {activeSlide &&
+                        activeSlide.elements.map((el) => {
                             const selected = selectedIds.includes(el.id);
+                            const isEditing = editingId === el.id;
 
                             return (
                                 <div
                                     key={el.id}
-                                    className={`${s.element} ${selected ? s.selected : ""}`}
+                                    className={`${s.element} ${el.kind === "image" ? s.imageElement : ""} ${
+                                        selected ? s.selected : ""
+                                    }`}
                                     style={{
                                         left: el.position.x,
                                         top: el.position.y,
-                                        width: el.size.width,
-                                        height: el.size.height,
+                                        width: Math.max(20, el.size.width),
+                                        height: Math.max(20, el.size.height),
                                     }}
-                                    onMouseDown={(e) => startDrag(e, el)}
+                                    onDoubleClick={(e) => {
+                                        if (el.kind === "text") {
+                                            e.stopPropagation();
+                                            startEditing(el);
+                                        }
+                                    }}
+                                    onMouseDown={(e) => {
+                                        const multi = e.shiftKey;
+
+                                        // If editing text, don't start drag/select
+                                        if (editingId) return;
+
+                                        // Calculate what selection will be after this click
+                                        const current = [...selectedIds];
+                                        let nextSelection: ID[];
+
+                                        if (multi) {
+                                            nextSelection = current.includes(el.id)
+                                                ? current.filter((x) => x !== el.id)
+                                                : [...current, el.id];
+                                        } else {
+                                            nextSelection = [el.id];
+                                        }
+
+                                        const dragIds = nextSelection.length ? nextSelection : [el.id];
+
+                                        handleSelect(el, multi);
+                                        startDrag(e, el.id, dragIds);
+                                    }}
                                 >
                                     {el.kind === "text" ? (
-                                        <div className={s.text}>{el.content}</div>
+                                        isEditing ? (
+                                            <textarea
+                                                className={s.textarea}
+                                                autoFocus
+                                                ref={textareaRef}
+                                                value={editingValue}
+                                                onChange={(ev) => setEditingValue(ev.target.value)}
+                                                onBlur={() => stopEditing(true, el)}
+                                                onKeyDown={(ev) => {
+                                                    if (ev.key === "Escape") {
+                                                        ev.preventDefault();
+                                                        stopEditing(false, el);
+                                                    }
+                                                    if (ev.key === "Enter" && ev.metaKey) {
+                                                        ev.preventDefault();
+                                                        stopEditing(true, el);
+                                                    }
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className={s.text}
+                                                onMouseDown={(ev) => {
+                                                    // allow drag even on text area
+                                                    if (editingId) {
+                                                        ev.stopPropagation();
+                                                    }
+                                                }}
+                                            >
+                                                {el.content}
+                                            </div>
+                                        )
                                     ) : (
                                         <img src={el.src} className={s.img} draggable={false} />
                                     )}
 
-                                    {selected && (
+                                    {selected && !isEditing && (
                                         <>
-                                            {/* углы */}
                                             <div
                                                 className={`${s.handle} ${s.tl}`}
-                                                onMouseDown={(e) => startResize(e, el, "tl")}
+                                                onMouseDown={(e) => startResize(e, el.id, "tl")}
                                             />
                                             <div
                                                 className={`${s.handle} ${s.tr}`}
-                                                onMouseDown={(e) => startResize(e, el, "tr")}
+                                                onMouseDown={(e) => startResize(e, el.id, "tr")}
                                             />
                                             <div
                                                 className={`${s.handle} ${s.bl}`}
-                                                onMouseDown={(e) => startResize(e, el, "bl")}
+                                                onMouseDown={(e) => startResize(e, el.id, "bl")}
                                             />
                                             <div
                                                 className={`${s.handle} ${s.br}`}
-                                                onMouseDown={(e) => startResize(e, el, "br")}
+                                                onMouseDown={(e) => startResize(e, el.id, "br")}
                                             />
 
-                                            {/* середины сторон */}
+                                            {/* middle handles */}
                                             <div
                                                 className={`${s.handle} ${s.tm}`}
-                                                onMouseDown={(e) => startResize(e, el, "tm")}
+                                                onMouseDown={(e) => startResize(e, el.id, "tm")}
                                             />
                                             <div
                                                 className={`${s.handle} ${s.bm}`}
-                                                onMouseDown={(e) => startResize(e, el, "bm")}
+                                                onMouseDown={(e) => startResize(e, el.id, "bm")}
                                             />
                                             <div
                                                 className={`${s.handle} ${s.ml}`}
-                                                onMouseDown={(e) => startResize(e, el, "ml")}
+                                                onMouseDown={(e) => startResize(e, el.id, "ml")}
                                             />
                                             <div
                                                 className={`${s.handle} ${s.mr}`}
-                                                onMouseDown={(e) => startResize(e, el, "mr")}
+                                                onMouseDown={(e) => startResize(e, el.id, "mr")}
                                             />
                                         </>
                                     )}
