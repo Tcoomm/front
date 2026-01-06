@@ -29,11 +29,9 @@ import {
   Role,
 } from "../appwrite";
 import { presentationSchema } from "../appwrite/schemas/presentationSchema";
-import TitleBar from "../components/TitleBar/TitleBar";
-import SlideList from "../components/SlideList/SlideList";
-import Workspace from "../components/Workspace/Workspace";
-import Toolbar from "../components/Toolbar/Toolbar";
 import DashboardPage from "../appwrite/components/DashboardPage";
+import EditorPage from "./EditorPage";
+import PlayerPage from "./PlayerPage";
 import { usePresentationList } from "../appwrite/hooks/usePresentationList";
 import { useAutoSave } from "../appwrite/hooks/useAutoSave";
 import { usePlayerControls } from "../hooks/usePlayerControls";
@@ -273,7 +271,7 @@ export default function ProtectedRoutes() {
   useEffect(() => {
     if (!user) return;
     function onKey(e: KeyboardEvent) {
-      const code = e.code.toLowerCase(); // layout-agnostic (KeyZ/KeyY)
+      const code = e.code.toLowerCase();
       const modifier = e.ctrlKey || e.metaKey;
       const isUndo = modifier && code === "keyz" && !e.shiftKey;
       const isRedo = modifier && (code === "keyy" || (code === "keyz" && e.shiftKey));
@@ -527,125 +525,41 @@ export default function ProtectedRoutes() {
   );
 
   const editorView = (
-    <div className="page">
-      <div className="editor-topbar">
-        <div className="editor-title">
-          <TitleBar />
-        </div>
-        <div className="editor-controls">
-          <Toolbar
-            onUndo={() => dispatch(undo())}
-            onRedo={() => dispatch(redo())}
-            onAddSlide={onAddSlide}
-            onDeleteSlide={onDeleteSlide}
-            onAddText={onAddText}
-            onAddImageFile={onAddImage}
-            onDeleteSelected={onDeleteElement}
-            onSetBgColor={onSetBgColor}
-            onSetBgNone={onSetBgNone}
-            onOpenPlayer={() => navigate(playerRoute)}
-          />
-        </div>
-      </div>
-      <div className="auth-status editor-status">
-        <span>Signed in as {user?.email}</span>
-        <button className="auth-ghost" onClick={() => navigate("/dashboard")}>
-          Dashboard
-        </button>
-
-        {appwriteDataConfigured ? (
-          saveStatus === "saving" ? (
-            <span>Saving...</span>
-          ) : saveStatus === "saved" ? (
-            <span>Saved</span>
-          ) : null
-        ) : (
-          <span className="auth-error-inline">Appwrite DB/Storage is not configured.</span>
-        )}
-        <button className="auth-ghost" onClick={handleLogout} disabled={authBusy}>
-          Sign out
-        </button>
-        {saveError ? <span className="auth-error-inline">{saveError}</span> : null}
-        {authError ? <span className="auth-error-inline">{authError}</span> : null}
-      </div>
-
-      <div className="grid editor-grid">
-        <SlideList />
-
-        <Workspace />
-      </div>
-    </div>
+    <EditorPage
+      userEmail={user?.email ?? null}
+      appwriteDataConfigured={appwriteDataConfigured}
+      saveStatus={saveStatus}
+      saveError={saveError}
+      authError={authError}
+      authBusy={authBusy}
+      onDashboard={() => navigate("/dashboard")}
+      onLogout={handleLogout}
+      onUndo={() => dispatch(undo())}
+      onRedo={() => dispatch(redo())}
+      onAddSlide={onAddSlide}
+      onDeleteSlide={onDeleteSlide}
+      onAddText={onAddText}
+      onAddImageFile={onAddImage}
+      onDeleteSelected={onDeleteElement}
+      onSetBgColor={onSetBgColor}
+      onSetBgNone={onSetBgNone}
+      onOpenPlayer={() => navigate(playerRoute)}
+    />
   );
 
   const totalSlides = presentation.slides.length;
   const currentSlide = presentation.slides[playerIndex] ?? null;
-  const playerBackground: React.CSSProperties = {};
-  if (currentSlide?.background.kind === "color") {
-    playerBackground.backgroundColor = currentSlide.background.value;
-  } else if (currentSlide?.background.kind === "image") {
-    playerBackground.backgroundImage = `url(${currentSlide.background.src})`;
-    playerBackground.backgroundSize = "cover";
-    playerBackground.backgroundPosition = "center";
-  }
-
   const playerView = (
-    <div className="player-page">
-      <div className="player-top">
-        <div className="player-actions">
-          <span className="player-counter">
-            {Math.min(playerIndex + 1, totalSlides)}/{totalSlides || 1}
-          </span>
-          <button className="player-btn" onClick={() => navigate(editorRoute)}>
-            Back to editor
-          </button>
-        </div>
-      </div>
-      <div className="player-stage" ref={playerStageRef}>
-        <div className="player-zoom" style={{ transform: `scale(${playerScale})` }}>
-          <div className="player-slide" style={playerBackground}>
-            {currentSlide
-              ? currentSlide.elements.map((el) => (
-                  <div
-                    key={el.id}
-                    className={`player-el ${el.kind === "text" ? "player-text" : "player-image"}`}
-                    style={{
-                      left: el.position.x,
-                      top: el.position.y,
-                      width: Math.max(20, el.size.width),
-                      height: Math.max(20, el.size.height),
-                      color: el.kind === "text" ? el.color : undefined,
-                      fontSize: el.kind === "text" ? `${el.fontSize}px` : undefined,
-                      fontFamily: el.kind === "text" ? el.fontFamily : undefined,
-                    }}
-                  >
-                    {el.kind === "text" ? (
-                      el.content
-                    ) : (
-                      <img src={el.src} className="player-img" draggable={false} />
-                    )}
-                  </div>
-                ))
-              : null}
-          </div>
-        </div>
-      </div>
-      <div className="player-controls">
-        <button
-          className="player-btn"
-          onClick={() => setPlayerIndex((prev) => Math.max(0, prev - 1))}
-          disabled={playerIndex <= 0}
-        >
-          Prev
-        </button>
-        <button
-          className="player-btn-primary"
-          onClick={() => setPlayerIndex((prev) => Math.min(totalSlides - 1, prev + 1))}
-          disabled={playerIndex >= totalSlides - 1}
-        >
-          Next
-        </button>
-      </div>
-    </div>
+    <PlayerPage
+      currentSlide={currentSlide}
+      playerIndex={playerIndex}
+      totalSlides={totalSlides}
+      playerScale={playerScale}
+      stageRef={playerStageRef}
+      onBack={() => navigate(editorRoute)}
+      onPrev={() => setPlayerIndex((prev) => Math.max(0, prev - 1))}
+      onNext={() => setPlayerIndex((prev) => Math.min(totalSlides - 1, prev + 1))}
+    />
   );
 
   if (restoring && (isEditor || isPlayer)) {

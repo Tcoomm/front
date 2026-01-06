@@ -42,7 +42,6 @@ export function useAuth({ account, appwriteConfigured }: UseAuthOptions) {
         if (alive) setUser(current);
       })
       .catch(() => {
-        // Not logged in.
       })
       .finally(() => {
         if (alive) setAuthReady(true);
