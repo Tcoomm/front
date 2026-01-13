@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "../translations";
 import TitleBar from "../components/TitleBar/TitleBar";
 import SlideList from "../components/SlideList/SlideList";
 import Workspace from "../components/Workspace/Workspace";
@@ -16,10 +17,15 @@ type EditorPageProps = {
   onUndo: () => void;
   onRedo: () => void;
   onAddSlide: () => void;
-  onDeleteSlide: () => void;
+  onAddSlideFromTemplate: (templateId: string) => void;
   onAddText: () => void;
   onAddImageFile: (file: File) => void;
-  onDeleteSelected: () => void;
+  onExportPdf: () => void;
+  onExportJson: () => void;
+  onImportJsonFile: (file: File) => void;
+  onSetBgImageFile: (file: File) => void;
+  onAlignElements: (axis: "x" | "y", mode: "start" | "center" | "end") => void;
+  onDeleteAny: () => void;
   onSetBgColor: (c: string) => void;
   onSetBgNone: () => void;
   onOpenPlayer: () => void;
@@ -37,14 +43,20 @@ export default function EditorPage({
   onUndo,
   onRedo,
   onAddSlide,
-  onDeleteSlide,
+  onAddSlideFromTemplate,
   onAddText,
   onAddImageFile,
-  onDeleteSelected,
+  onExportPdf,
+  onExportJson,
+  onImportJsonFile,
+  onSetBgImageFile,
+  onAlignElements,
+  onDeleteAny,
   onSetBgColor,
   onSetBgNone,
   onOpenPlayer,
 }: EditorPageProps) {
+  const { lang, setLang, t } = useI18n();
   return (
     <div className="page">
       <div className="editor-topbar">
@@ -56,10 +68,15 @@ export default function EditorPage({
             onUndo={onUndo}
             onRedo={onRedo}
             onAddSlide={onAddSlide}
-            onDeleteSlide={onDeleteSlide}
+            onAddSlideFromTemplate={onAddSlideFromTemplate}
             onAddText={onAddText}
             onAddImageFile={onAddImageFile}
-            onDeleteSelected={onDeleteSelected}
+            onExportPdf={onExportPdf}
+            onExportJson={onExportJson}
+            onImportJsonFile={onImportJsonFile}
+            onSetBgImageFile={onSetBgImageFile}
+            onAlignElements={onAlignElements}
+            onDeleteAny={onDeleteAny}
             onSetBgColor={onSetBgColor}
             onSetBgNone={onSetBgNone}
             onOpenPlayer={onOpenPlayer}
@@ -67,22 +84,30 @@ export default function EditorPage({
         </div>
       </div>
       <div className="auth-status editor-status">
-        <span>Signed in as {userEmail}</span>
+        <span>
+          {t("editor.signedInAs")} {userEmail}
+        </span>
         <button className="auth-ghost" onClick={onDashboard}>
-          Dashboard
+          {t("editor.dashboard")}
+        </button>
+        <button
+          className="auth-ghost"
+          onClick={() => setLang(lang === "ru" ? "en" : "ru")}
+        >
+          {t("lang.toggle")}
         </button>
 
         {appwriteDataConfigured ? (
           saveStatus === "saving" ? (
-            <span>Saving...</span>
+            <span>{t("editor.saving")}</span>
           ) : saveStatus === "saved" ? (
-            <span>Saved</span>
+            <span>{t("editor.saved")}</span>
           ) : null
         ) : (
-          <span className="auth-error-inline">Appwrite DB/Storage is not configured.</span>
+          <span className="auth-error-inline">{t("editor.notConfigured")}</span>
         )}
         <button className="auth-ghost" onClick={onLogout} disabled={authBusy}>
-          Sign out
+          {t("editor.signOut")}
         </button>
         {saveError ? <span className="auth-error-inline">{saveError}</span> : null}
         {authError ? <span className="auth-error-inline">{authError}</span> : null}
@@ -95,3 +120,5 @@ export default function EditorPage({
     </div>
   );
 }
+
+

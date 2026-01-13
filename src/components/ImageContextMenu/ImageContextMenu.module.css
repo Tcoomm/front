@@ -1,0 +1,30 @@
+.menu {
+    min-width: 160px;
+    padding: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.15);
+}
+
+.fileBtn {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid #1f2937;
+    cursor: pointer;
+}
+
+.fileInput {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}

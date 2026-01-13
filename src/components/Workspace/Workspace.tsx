@@ -7,9 +7,17 @@ import {
     selectElements,
     selectPresentation,
     updateTextContent,
+    updateTextBackground,
+    updateTextBorder,
+    updateTextColor,
+    updateTextFontFamily,
+    updateTextFontSize,
+    updateTextAlign,
+    updateTextStyle,
 } from "../../store";
 import { useDrag } from "../../hooks/useDrag";
 import { useResize } from "../../hooks/useResize";
+import TextContextMenu from "../TextContextMenu/TextContextMenu";
 import s from "./Workspace.module.css";
 
 export default function Workspace() {
@@ -24,7 +32,19 @@ export default function Workspace() {
 
     const [editingId, setEditingId] = useState<ID | null>(null);
     const [editingValue, setEditingValue] = useState("");
+    const [editingRich, setEditingRich] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const richEditRef = useRef<HTMLDivElement | null>(null);
+    const selectionRef = useRef<Range | null>(null);
+    const [textMenu, setTextMenu] = useState<{ x: number; y: number; elId: ID } | null>(null);
+
+    function escapeHtml(value: string) {
+        return value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;");
+    }
 
     // auto-resize textarea to fit content within box
     useEffect(() => {
@@ -34,6 +54,12 @@ export default function Workspace() {
             ta.style.height = `${ta.scrollHeight}px`;
         }
     }, [editingId, editingValue]);
+
+    useEffect(() => {
+        if (editingId && editingRich && richEditRef.current) {
+            richEditRef.current.focus();
+        }
+    }, [editingId, editingRich]);
 
     function handleSelect(el: SlideElement, multi: boolean) {
         let ids = selectedIds;
@@ -60,10 +86,15 @@ export default function Workspace() {
     }
 
     // DRAG
-    const { startDrag } = useDrag(selectedIds, getElement, (id, x, y) => {
-        if (!activeSlide) return;
-        dispatch(moveElement({ slideId: activeSlide.id, elId: id, x, y }));
-    });
+    const { startDrag } = useDrag(
+        selectedIds,
+        getElement,
+        (id, x, y) => {
+            if (!activeSlide) return;
+            dispatch(moveElement({ slideId: activeSlide.id, elId: id, x, y }));
+        },
+        { gridSize: 10, disableSnapKey: "Alt" }
+    );
 
     // RESIZE
     const { startResize } = useResize(getElement, (id, x, y, w, h) => {
@@ -73,18 +104,94 @@ export default function Workspace() {
 
     function startEditing(el: SlideElement) {
         if (el.kind !== "text") return;
+        const hasMarkup = /<[^>]+>/.test(el.content);
+        const html = el.isRichText || hasMarkup ? el.content : escapeHtml(el.content).replace(/\n/g, "<br/>");
         setEditingId(el.id);
-        setEditingValue(el.content);
+        setEditingValue(html);
+        setEditingRich(true);
     }
 
     function stopEditing(save: boolean, el: SlideElement) {
         if (el.kind !== "text") return;
         if (save && activeSlide) {
-            dispatch(updateTextContent({ slideId: activeSlide.id, elId: el.id, content: editingValue }));
+            const hasMarkup = /<[^>]+>/.test(editingValue);
+            const isRichText = editingRich || hasMarkup;
+            dispatch(
+                updateTextContent({
+                    slideId: activeSlide.id,
+                    elId: el.id,
+                    content: editingValue,
+                    isRichText,
+                })
+            );
         }
         setEditingId(null);
         setEditingValue("");
+        setEditingRich(false);
     }
+
+    function applyRichCommand(command: "bold" | "italic" | "underline") {
+        if (!richEditRef.current) return false;
+        if (selectionRef.current) {
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(selectionRef.current);
+            }
+        }
+        richEditRef.current.focus();
+        document.execCommand(command, false);
+        setEditingValue(richEditRef.current.innerHTML);
+        return true;
+    }
+
+    function applyRichFontSize(size: number) {
+        if (!richEditRef.current) return false;
+        if (selectionRef.current) {
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(selectionRef.current);
+            }
+        }
+        richEditRef.current.focus();
+        document.execCommand("fontSize", false, "7");
+        const fonts = richEditRef.current.querySelectorAll("font[size=\"7\"]");
+        fonts.forEach((node) => {
+            const span = document.createElement("span");
+            span.style.fontSize = `${size}px`;
+            span.innerHTML = node.innerHTML;
+            node.replaceWith(span);
+        });
+        setEditingValue(richEditRef.current.innerHTML);
+        return true;
+    }
+
+    function captureSelection() {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+        const range = selection.getRangeAt(0);
+        if (!richEditRef.current) return;
+        if (richEditRef.current.contains(range.startContainer)) {
+            selectionRef.current = range;
+        }
+    }
+
+    useEffect(() => {
+        if (!textMenu) return;
+        function handleClick() {
+            setTextMenu(null);
+        }
+        function handleKey(e: KeyboardEvent) {
+            if (e.key === "Escape") setTextMenu(null);
+        }
+        window.addEventListener("mousedown", handleClick);
+        window.addEventListener("keydown", handleKey);
+        return () => {
+            window.removeEventListener("mousedown", handleClick);
+            window.removeEventListener("keydown", handleKey);
+        };
+    }, [textMenu]);
 
     // background
     const bg: React.CSSProperties = {};
@@ -115,6 +222,32 @@ export default function Workspace() {
                         activeSlide.elements.map((el) => {
                             const selected = selectedIds.includes(el.id);
                             const isEditing = editingId === el.id;
+                            const isRich =
+                                el.kind === "text" && (Boolean(el.isRichText) || /<[^>]+>/.test(el.content));
+                            const textStyles: React.CSSProperties =
+                                el.kind === "text"
+                                    ? {
+                                          fontFamily: el.fontFamily,
+                                          fontSize: el.fontSize,
+                                          color: el.color,
+                                          textAlign: el.textAlign,
+                                          backgroundColor: "transparent",
+                                          boxSizing: "border-box",
+                                          fontWeight: !isRich && el.bold ? "700" : "400",
+                                          fontStyle: !isRich && el.italic ? "italic" : "normal",
+                                          textDecoration: !isRich && el.underline ? "underline" : "none",
+                                      }
+                                    : {};
+                            const textShellStyles: React.CSSProperties =
+                                el.kind === "text"
+                                    ? {
+                                          border:
+                                              el.borderWidth > 0
+                                                  ? `${el.borderWidth}px solid ${el.borderColor ?? "#111"}`
+                                                  : "none",
+                                          backgroundColor: el.backgroundColor ?? "transparent",
+                                      }
+                                    : {};
 
                             return (
                                 <div
@@ -157,38 +290,90 @@ export default function Workspace() {
                                         handleSelect(el, multi);
                                         startDrag(e, el.id, dragIds);
                                     }}
+                                    onContextMenu={(e) => {
+                                        if (el.kind !== "text") return;
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleSelect(el, false);
+                                        if (editingId === el.id && editingRich) {
+                                            captureSelection();
+                                        }
+                                        setTextMenu({ x: e.clientX, y: e.clientY, elId: el.id });
+                                    }}
                                 >
                                     {el.kind === "text" ? (
                                         isEditing ? (
-                                            <textarea
-                                                className={s.textarea}
-                                                autoFocus
-                                                ref={textareaRef}
-                                                value={editingValue}
-                                                onChange={(ev) => setEditingValue(ev.target.value)}
-                                                onBlur={() => stopEditing(true, el)}
-                                                onKeyDown={(ev) => {
-                                                    if (ev.key === "Escape") {
-                                                        ev.preventDefault();
-                                                        stopEditing(false, el);
-                                                    }
-                                                    if (ev.key === "Enter" && ev.metaKey) {
-                                                        ev.preventDefault();
-                                                        stopEditing(true, el);
-                                                    }
-                                                }}
-                                            />
+                                            <div className={s.textShell} style={textShellStyles}>
+                                                {editingRich ? (
+                                                    <div
+                                                        className={s.textarea}
+                                                        ref={richEditRef}
+                                                        contentEditable
+                                                        suppressContentEditableWarning
+                                                        style={textStyles}
+                                                        dangerouslySetInnerHTML={{ __html: editingValue }}
+                                                        onInput={(ev) => {
+                                                            const target = ev.currentTarget;
+                                                            setEditingValue(target.innerHTML);
+                                                        }}
+                                                        onBlur={() => stopEditing(true, el)}
+                                                    onKeyDown={(ev) => {
+                                                        if (ev.key === "Escape") {
+                                                            ev.preventDefault();
+                                                            stopEditing(false, el);
+                                                        }
+                                                        if (ev.key === "Enter" && !ev.metaKey && !ev.ctrlKey) {
+                                                            ev.preventDefault();
+                                                            document.execCommand("insertHTML", false, "<br/>");
+                                                            if (richEditRef.current) {
+                                                                setEditingValue(richEditRef.current.innerHTML);
+                                                            }
+                                                        }
+                                                        if (ev.key === "Enter" && ev.metaKey) {
+                                                            ev.preventDefault();
+                                                            stopEditing(true, el);
+                                                        }
+                                                    }}
+                                                    />
+                                                ) : (
+                                                    <textarea
+                                                        className={s.textarea}
+                                                        autoFocus
+                                                        ref={textareaRef}
+                                                        style={textStyles}
+                                                        value={editingValue}
+                                                        onChange={(ev) => setEditingValue(ev.target.value)}
+                                                        onBlur={() => stopEditing(true, el)}
+                                                        onKeyDown={(ev) => {
+                                                            if (ev.key === "Escape") {
+                                                                ev.preventDefault();
+                                                                stopEditing(false, el);
+                                                            }
+                                                            if (ev.key === "Enter" && ev.metaKey) {
+                                                                ev.preventDefault();
+                                                                stopEditing(true, el);
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
                                         ) : (
-                                            <div
-                                                className={s.text}
-                                                onMouseDown={(ev) => {
-                                                    // allow drag even on text area
-                                                    if (editingId) {
-                                                        ev.stopPropagation();
-                                                    }
-                                                }}
-                                            >
-                                                {el.content}
+                                            <div className={s.textShell} style={textShellStyles}>
+                                                <div
+                                                    className={s.text}
+                                                    style={textStyles}
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: isRich
+                                                            ? el.content
+                                                            : escapeHtml(el.content).replace(/\n/g, "<br/>"),
+                                                    }}
+                                                    onMouseDown={(ev) => {
+                                                        // allow drag even on text area
+                                                        if (editingId) {
+                                                            ev.stopPropagation();
+                                                        }
+                                                    }}
+                                                />
                                             </div>
                                         )
                                     ) : (
@@ -236,6 +421,127 @@ export default function Workspace() {
                                 </div>
                             );
                         })}
+                    {textMenu && activeSlide ? (
+                        <div
+                            className={s.menuPopover}
+                            style={{ left: textMenu.x, top: textMenu.y }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                        >
+                            {(() => {
+                                const el = activeSlide.elements.find(
+                                    (item) => item.id === textMenu.elId && item.kind === "text"
+                                );
+                                if (!el || el.kind !== "text") return null;
+                                return (
+                                    <TextContextMenu
+                                        color={el.backgroundColor ?? "#ffffff"}
+                                        textColor={el.color}
+                                        fontSize={el.fontSize}
+                                        fontFamily={el.fontFamily}
+                                        borderColor={el.borderColor ?? "#111"}
+                                        borderWidth={el.borderWidth ?? 0}
+                                        onChange={(color) => {
+                                            dispatch(
+                                                updateTextBackground({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    backgroundColor: color === "#ffffff" ? null : color,
+                                                })
+                                            );
+                                        }}
+                                        onTextColorChange={(color) =>
+                                            dispatch(updateTextColor({ slideId: activeSlide.id, elId: el.id, color }))
+                                        }
+                                        onBorderColorChange={(color) =>
+                                            dispatch(
+                                                updateTextBorder({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    borderColor: color,
+                                                })
+                                            )
+                                        }
+                                        onBorderWidthChange={(width) =>
+                                            dispatch(
+                                                updateTextBorder({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    borderWidth: width,
+                                                })
+                                            )
+                                        }
+                                        onClear={() =>
+                                            dispatch(
+                                                updateTextBackground({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    backgroundColor: null,
+                                                })
+                                            )
+                                        }
+                                        onFontSizeChange={(size) => {
+                                            if (editingId === el.id && editingRich && applyRichFontSize(size)) return;
+                                            dispatch(
+                                                updateTextFontSize({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    fontSize: size,
+                                                })
+                                            );
+                                        }}
+                                        onFontFamilyChange={(family) =>
+                                            dispatch(
+                                                updateTextFontFamily({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    fontFamily: family,
+                                                })
+                                            )
+                                        }
+                                        onTextAlignChange={(align) =>
+                                            dispatch(
+                                                updateTextAlign({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    textAlign: align,
+                                                })
+                                            )
+                                        }
+                                        onToggleBold={() => {
+                                            if (editingId === el.id && editingRich && applyRichCommand("bold")) return;
+                                            dispatch(
+                                                updateTextStyle({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    bold: !el.bold,
+                                                })
+                                            );
+                                        }}
+                                        onToggleItalic={() => {
+                                            if (editingId === el.id && editingRich && applyRichCommand("italic")) return;
+                                            dispatch(
+                                                updateTextStyle({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    italic: !el.italic,
+                                                })
+                                            );
+                                        }}
+                                        onToggleUnderline={() => {
+                                            if (editingId === el.id && editingRich && applyRichCommand("underline")) return;
+                                            dispatch(
+                                                updateTextStyle({
+                                                    slideId: activeSlide.id,
+                                                    elId: el.id,
+                                                    underline: !el.underline,
+                                                })
+                                            );
+                                        }}
+                                    />
+                                );
+                            })()}
+                        </div>
+                    ) : null}
                 </div>
             </div>
         </main>

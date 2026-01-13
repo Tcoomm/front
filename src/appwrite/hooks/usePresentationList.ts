@@ -57,7 +57,6 @@ export function usePresentationList({
               if (typeof parsed.title === "string") title = parsed.title;
               if (typeof parsed.ownerId === "string") ownerId = parsed.ownerId;
             } catch {
-              // ignore parse errors for list
             }
           }
           return { id: doc.$id, title, updatedAt: doc.$updatedAt, ownerId };

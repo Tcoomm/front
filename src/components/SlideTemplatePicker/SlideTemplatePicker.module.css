@@ -1,0 +1,48 @@
+.root {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.compact {
+  gap: 6px;
+}
+
+.select {
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  padding: 0 8px;
+  background: #fff;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.compactSelect {
+  height: 30px;
+  font-size: 12px;
+}
+
+.btn {
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+  padding: 0 12px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.compactBtn {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.btn:hover {
+  background: #dbeafe;
+}

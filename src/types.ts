@@ -24,9 +24,17 @@ export type BaseElement = {
 export type TextElement = BaseElement & {
   kind: "text";
   content: string;
+  isRichText: boolean;
   fontSize: number;
   fontFamily: string;
   color: string;
+  backgroundColor: string | null;
+  borderColor: string | null;
+  borderWidth: number;
+  textAlign: "left" | "center" | "right";
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
 };
 
 export type ImageElement = BaseElement & {
@@ -101,9 +109,17 @@ export function makeText(content = "Title"): TextElement {
     id: uid(),
     kind: "text",
     content,
+    isRichText: false,
     fontSize: DEFAULT_TEXT_FONT_SIZE,     // <-- фикс
     fontFamily: DEFAULT_TEXT_FONT_FAMILY, // <-- фикс
     color: "#111",
+    backgroundColor: null,
+    borderColor: null,
+    borderWidth: 0,
+    textAlign: "left",
+    bold: false,
+    italic: false,
+    underline: false,
     position: { x: GAP, y: GAP },         // старт — но потом сместим автолейаутом
     size: { ...DEFAULT_TEXT_SIZE },       // <-- фикс
   };

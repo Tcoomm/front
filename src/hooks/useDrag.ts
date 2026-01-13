@@ -1,10 +1,16 @@
 import { useEffect, useRef } from "react";
 import type { ID } from "../types";
 
+type DragOptions = {
+    gridSize?: number;
+    disableSnapKey?: "Alt" | "Shift";
+};
+
 export function useDrag(
     selected: ID[],
     getElement: (id: ID) => { x: number; y: number },
-    onMove: (id: ID, x: number, y: number) => void
+    onMove: (id: ID, x: number, y: number) => void,
+    options?: DragOptions
 ) {
     const dragRef = useRef<{
         ids: ID[];
@@ -46,9 +52,25 @@ export function useDrag(
             const dx = ev.clientX - drag.startX;
             const dy = ev.clientY - drag.startY;
 
+            const grid = options?.gridSize ?? 0;
+            const disableKey = options?.disableSnapKey;
+            const snapEnabled =
+                (disableKey === "Alt" && ev.altKey) || (disableKey === "Shift" && ev.shiftKey);
+
+            let moveDx = dx;
+            let moveDy = dy;
+
+            if (grid > 0 && snapEnabled) {
+                const refId = drag.ids[0];
+                const base = drag.start[refId];
+                const snap = (value: number) => Math.round(value / grid) * grid;
+                moveDx = snap(base.x + dx) - base.x;
+                moveDy = snap(base.y + dy) - base.y;
+            }
+
             drag.ids.forEach((id) => {
                 const base = drag.start[id];
-                onMoveRef.current(id, base.x + dx, base.y + dy);
+                onMoveRef.current(id, base.x + moveDx, base.y + moveDy);
             });
         }
 

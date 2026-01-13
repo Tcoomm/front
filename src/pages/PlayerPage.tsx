@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "../translations";
 import type { Slide } from "../types";
 
 type PlayerPageProps = {
@@ -22,13 +23,23 @@ export default function PlayerPage({
   onNext,
   stageRef,
 }: PlayerPageProps) {
+  const { t } = useI18n();
+  function escapeHtml(value: string) {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
   const playerBackground: React.CSSProperties = {};
   if (currentSlide?.background.kind === "color") {
     playerBackground.backgroundColor = currentSlide.background.value;
   } else if (currentSlide?.background.kind === "image") {
     playerBackground.backgroundImage = `url(${currentSlide.background.src})`;
-    playerBackground.backgroundSize = "cover";
+    playerBackground.backgroundSize = "100% 100%";
     playerBackground.backgroundPosition = "center";
+    playerBackground.backgroundRepeat = "no-repeat";
   }
 
   return (
@@ -39,7 +50,7 @@ export default function PlayerPage({
             {Math.min(playerIndex + 1, totalSlides)}/{totalSlides || 1}
           </span>
           <button className="player-btn" onClick={onBack}>
-            Back to editor
+            {t("player.back")}
           </button>
         </div>
       </div>
@@ -59,10 +70,41 @@ export default function PlayerPage({
                       color: el.kind === "text" ? el.color : undefined,
                       fontSize: el.kind === "text" ? `${el.fontSize}px` : undefined,
                       fontFamily: el.kind === "text" ? el.fontFamily : undefined,
+                      backgroundColor:
+                        el.kind === "text" ? el.backgroundColor ?? "transparent" : undefined,
+                      textAlign: el.kind === "text" ? el.textAlign ?? "left" : undefined,
+                      fontWeight:
+                        el.kind === "text" &&
+                        !(el.isRichText || /<[^>]+>/.test(el.content)) &&
+                        el.bold
+                          ? "700"
+                          : undefined,
+                      fontStyle:
+                        el.kind === "text" &&
+                        !(el.isRichText || /<[^>]+>/.test(el.content)) &&
+                        el.italic
+                          ? "italic"
+                          : undefined,
+                      textDecoration:
+                        el.kind === "text" &&
+                        !(el.isRichText || /<[^>]+>/.test(el.content)) &&
+                        el.underline
+                          ? "underline"
+                          : undefined,
+                      border:
+                        el.kind === "text" && el.borderWidth > 0
+                          ? `${el.borderWidth}px solid ${el.borderColor ?? "#111"}`
+                          : undefined,
                     }}
                   >
                     {el.kind === "text" ? (
-                      el.content
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: el.isRichText || /<[^>]+>/.test(el.content)
+                            ? el.content
+                            : escapeHtml(el.content).replace(/\n/g, "<br/>"),
+                        }}
+                      />
                     ) : (
                       <img src={el.src} className="player-img" draggable={false} />
                     )}
@@ -74,16 +116,18 @@ export default function PlayerPage({
       </div>
       <div className="player-controls">
         <button className="player-btn" onClick={onPrev} disabled={playerIndex <= 0}>
-          Prev
+          {t("player.prev")}
         </button>
         <button
           className="player-btn-primary"
           onClick={onNext}
           disabled={playerIndex >= totalSlides - 1}
         >
-          Next
+          {t("player.next")}
         </button>
       </div>
     </div>
   );
 }
+
+

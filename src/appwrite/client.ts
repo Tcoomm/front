@@ -5,7 +5,7 @@ const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID as string | undefined
 
 const appwriteConfigured = Boolean(endpoint && projectId);
 
-const client = new Client();
+const client = new Client(); // Здесь создаю клиент Appwrite и сервис account для авторизации.
 if (appwriteConfigured) {
   client.setEndpoint(endpoint!).setProject(projectId!);
 }

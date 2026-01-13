@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { reorderSlides, selectPresentation, selectSlide } from "../../store";
+import { useI18n } from "../../translations";
+import SlideThumbnail from "../SlideThumbnail/SlideThumbnail";
 
 import s from "./SlideList.module.css";
 
 export default function SlideList() {
+    const { t } = useI18n();
     const [drag, setDrag] = useState<{ index: number; ids: string[] } | null>(null);
     const [over, setOver] = useState<number | null>(null);
     const [moved, setMoved] = useState(false);
@@ -81,7 +84,7 @@ export default function SlideList() {
 
     return (
         <div className={s.root} onMouseUp={onUp}>
-            <h3 className={s.title}>Slides</h3>
+            <h3 className={s.title}>{t("slideList.title")}</h3>
 
             <div className={s.list}>
                 {slides.map((sl, i) => {
@@ -99,12 +102,17 @@ export default function SlideList() {
                                 } ${dragging ? s.dragging : ""}`}
                             onMouseDown={(e) => onDown(e, i)}
                             onMouseEnter={() => onEnter(i)}
-                            onClick={(e) => {
+                            onClick={() => {
                                 dispatch(selectSlide(sl.id));
                             }}
                         >
-                            <div className={s.name}>{sl.name} (#{i + 1})</div>
-                            <div className={s.id}>id: {sl.id}</div>
+                            <div className={s.thumb}>
+                                <SlideThumbnail slide={sl} />
+                            </div>
+                            <div className={s.meta}>
+                                <div className={s.name}>{sl.name ?? t("slideList.slide")} (#{i + 1})</div>
+                                <div className={s.id}>{t("slideList.id")}:  {sl.id}</div>
+                            </div>
                         </div>
                     );
                 })}
@@ -112,3 +120,5 @@ export default function SlideList() {
         </div>
     );
 }
+
+

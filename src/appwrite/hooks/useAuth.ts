@@ -57,7 +57,7 @@ export function useAuth({ account, appwriteConfigured }: UseAuthOptions) {
     setAuthError(null);
     setAuthBusy(true);
     try {
-      if (authMode === "register") {
+      if (authMode === "register") { // “Регистрация через account.create, вход через createEmailSession, потом беру текущего пользователя
         await account.create(ID.unique(), email, password, name.trim() || undefined);
       }
       await account.createEmailSession(email, password);

@@ -4,18 +4,24 @@ import { useDispatch, useSelector } from "react-redux";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import type { Models } from "appwrite";
 import type { Presentation } from "../types";
-import { makeSlide, uid } from "../types";
+import { cloneElement, makeSlide, uid } from "../types";
 import {
   addImage,
   addSlide,
+  addSlideFromTemplate,
   addText,
+  alignElements,
+  updateImageSrc,
+  duplicateElements,
   loadPresentation,
+  pasteElements,
   removeElement,
   removeSlide,
   setSlideBackground,
   undo,
   redo,
   selectPresentation,
+  selectSlide,
 } from "../store";
 import {
   appwriteConfigured,
@@ -35,7 +41,12 @@ import PlayerPage from "./PlayerPage";
 import { usePresentationList } from "../appwrite/hooks/usePresentationList";
 import { useAutoSave } from "../appwrite/hooks/useAutoSave";
 import { usePlayerControls } from "../hooks/usePlayerControls";
+import { useEditorHotkeys } from "../hooks/useEditorHotkeys";
 import { useAuthContext } from "../appwrite/auth/AuthContext";
+import { useI18n } from "../translations";
+import { downloadPresentationJson } from "../export/downloadPresentationJson";
+import { openPdfExport } from "../export/openPdfExport";
+import { parsePresentationJson, prepareImportedPresentation } from "../import/parsePresentationJson";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validatePresentation = ajv.compile(presentationSchema);
@@ -43,6 +54,7 @@ const SLIDE_WIDTH = 1200;
 const SLIDE_HEIGHT = 675;
 
 export default function ProtectedRoutes() {
+  const { t, lang } = useI18n();
   const presentation = useSelector(selectPresentation);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -131,7 +143,18 @@ export default function ProtectedRoutes() {
     dispatch(addSlide());
   }
 
+  function onAddSlideFromTemplate(templateId: string) {
+    dispatch(addSlideFromTemplate({ templateId }));
+  }
+
   function onDeleteSlide() {
+    if (!activeSlide) return;
+    if (activeSlide.elements.length) {
+      const ok = window.confirm(
+        `Delete slide "${activeSlide.name ?? "Slide"}" with ${activeSlide.elements.length} elements?`
+      );
+      if (!ok) return;
+    }
     dispatch(removeSlide());
   }
 
@@ -140,48 +163,94 @@ export default function ProtectedRoutes() {
     dispatch(addText({ slideId: activeSlide.id, text: "Title" }));
   }
 
-  async function onAddImage(file: File) {
-    if (!activeSlide) return;
-    if (!user) {
-      setSaveError("Sign in to upload images.");
+  function onExportPdf() {
+    openPdfExport(presentation, SLIDE_WIDTH, SLIDE_HEIGHT);
+  }
+
+  function onExportJson() {
+    downloadPresentationJson(presentation);
+  }
+
+  async function onImportJsonFile(file: File) {
+    const content = await file.text();
+    const result = parsePresentationJson(content, lang);
+    if (!result.ok) {
+      setSaveError(result.error);
       return;
     }
+    const fallbackTitle = file.name.replace(/\.json$/i, "");
+    const imported = prepareImportedPresentation(result.presentation, fallbackTitle);
+    if (user) {
+      imported.ownerId = user.$id;
+    }
+    setSaveError(null);
+    lastSavedRef.current = "";
+    setActivePresentationId(imported.id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("presentationId", imported.id);
+    }
+    dispatch(loadPresentation(imported));
+    navigate(`/editor/${imported.id}`);
+  }
+
+  async function uploadImage(file: File): Promise<string | null> {
+    if (!user) {
+      setSaveError(t("upload.signIn"));
+      return null;
+    }
     if (!appwriteDataConfigured) {
-      setSaveError("Appwrite storage is not configured.");
-      return;
+      setSaveError(t("upload.notConfigured"));
+      return null;
     }
     setSaveError(null);
     try {
       const permissions = getUserPermissions(user);
       const created = await storage.createFile(bucketId!, ID.unique(), file, permissions);
       const src = storage.getFileView(bucketId!, created.$id);
-      const srcString = String(src);
-      const size = await new Promise<{ width: number; height: number }>((resolve) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => {
-          URL.revokeObjectURL(url);
-          const scale = Math.min(1, SLIDE_WIDTH / img.naturalWidth, SLIDE_HEIGHT / img.naturalHeight);
-          resolve({
-            width: Math.round(img.naturalWidth * scale),
-            height: Math.round(img.naturalHeight * scale),
-          });
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          resolve({ width: 320, height: 220 });
-        };
-        img.src = url;
-      });
-      const position = {
-        x: Math.max(0, Math.round((SLIDE_WIDTH - size.width) / 2)),
-        y: Math.max(0, Math.round((SLIDE_HEIGHT - size.height) / 2)),
-      };
-      dispatch(addImage({ slideId: activeSlide.id, src: srcString, size, position }));
+      return String(src);
     } catch (err) {
       setSaveError(getErrorMessage(err));
+      return null;
     }
   }
+
+  function getSelectedImageId() {
+    if (!activeSlide) return null;
+    for (const id of selectedIds) {
+      const el = activeSlide.elements.find((item) => item.id === id && item.kind === "image");
+      if (el) return el.id;
+    }
+    return null;
+  }
+
+  async function onAddImage(file: File) {
+    if (!activeSlide) return;
+    const srcString = await uploadImage(file);
+    if (!srcString) return;
+    const size = await new Promise<{ width: number; height: number }>((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, SLIDE_WIDTH / img.naturalWidth, SLIDE_HEIGHT / img.naturalHeight);
+        resolve({
+          width: Math.round(img.naturalWidth * scale),
+          height: Math.round(img.naturalHeight * scale),
+        });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve({ width: 320, height: 220 });
+      };
+      img.src = url;
+    });
+    const position = {
+      x: Math.max(0, Math.round((SLIDE_WIDTH - size.width) / 2)),
+      y: Math.max(0, Math.round((SLIDE_HEIGHT - size.height) / 2)),
+    };
+    dispatch(addImage({ slideId: activeSlide.id, src: srcString, size, position }));
+  }
+
 
   function onDeleteElement() {
     if (!activeSlide || selectedIds.length === 0) return;
@@ -189,6 +258,12 @@ export default function ProtectedRoutes() {
     idsToRemove.forEach((id) => {
       dispatch(removeElement({ slideId: activeSlide.id, elId: id }));
     });
+  }
+
+  function getSelectedElements() {
+    if (!activeSlide) return [];
+    const set = new Set(selectedIds);
+    return activeSlide.elements.filter((el) => set.has(el.id)).map(cloneElement);
   }
 
   function onSetBgColor(c: string) {
@@ -199,6 +274,27 @@ export default function ProtectedRoutes() {
   function onSetBgNone() {
     if (!activeSlide) return;
     dispatch(setSlideBackground({ slideId: activeSlide.id, bg: { kind: "none" } }));
+  }
+
+  function onAlignElements(axis: "x" | "y", mode: "start" | "center" | "end") {
+    if (!activeSlide) return;
+    if (presentation.selection.elementIds.length === 0) return;
+    dispatch(
+      alignElements({
+        slideId: activeSlide.id,
+        elementIds: presentation.selection.elementIds,
+        axis,
+        mode,
+        relativeTo: "slide",
+      }),
+    );
+  }
+
+  async function onSetBgImage(file: File) {
+    if (!activeSlide) return;
+    const srcString = await uploadImage(file);
+    if (!srcString) return;
+    dispatch(setSlideBackground({ slideId: activeSlide.id, bg: { kind: "image", src: srcString } }));
   }
 
   useEffect(() => {
@@ -272,7 +368,7 @@ export default function ProtectedRoutes() {
     if (!user) return;
     function onKey(e: KeyboardEvent) {
       const code = e.code.toLowerCase();
-      const modifier = e.ctrlKey || e.metaKey;
+      const modifier = e.ctrlKey || e.metaKey; // добавил поддержку Cmd на Mac
       const isUndo = modifier && code === "keyz" && !e.shiftKey;
       const isRedo = modifier && (code === "keyy" || (code === "keyz" && e.shiftKey));
       if (isUndo) {
@@ -294,20 +390,24 @@ export default function ProtectedRoutes() {
     return "Unknown error";
   }
 
-  useEffect(() => {
-    if (!isEditor) return;
-    function onDeleteKey(e: KeyboardEvent) {
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
-      if (presentation.selection.elementIds.length === 0) return;
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName?.toLowerCase();
-      if (tag === "input" || tag === "textarea") return;
-      e.preventDefault();
-      onDeleteElement();
-    }
-    window.addEventListener("keydown", onDeleteKey);
-    return () => window.removeEventListener("keydown", onDeleteKey);
-  }, [isEditor, presentation.selection.elementIds.length]);
+  useEditorHotkeys({
+    isEditor,
+    slides: presentation.slides,
+    activeSlideId: activeSlide?.id ?? null,
+    selectedElementIds: selectedIds,
+    getSelectedElements,
+    onSelectSlide: (id) => dispatch(selectSlide(id)),
+    onDeleteElements: onDeleteElement,
+    onDeleteSlide: onDeleteSlide,
+    onDuplicateElements: () => {
+      if (!activeSlide || !selectedIds.length) return;
+      dispatch(duplicateElements({ slideId: activeSlide.id, elementIds: selectedIds }));
+    },
+    onPasteElements: (elements) => {
+      if (!activeSlide || !elements.length) return;
+      dispatch(pasteElements({ slideId: activeSlide.id, elements }));
+    },
+  });
 
   function getDefaultTitle() {
     const base = "Presentation";
@@ -480,9 +580,9 @@ export default function ProtectedRoutes() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1 className="auth-title">Appwrite is not configured</h1>
+          <h1 className="auth-title">{t("auth.notConfigured.title")}</h1>
           <p className="auth-note">
-            Set <code>VITE_APPWRITE_ENDPOINT</code> and <code>VITE_APPWRITE_PROJECT_ID</code> in your env.
+            {t("auth.notConfigured.note")}
           </p>
         </div>
       </div>
@@ -493,7 +593,7 @@ export default function ProtectedRoutes() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1 className="auth-title">Loading session...</h1>
+          <h1 className="auth-title">{t("auth.loadingSession")}</h1>
         </div>
       </div>
     );
@@ -537,10 +637,21 @@ export default function ProtectedRoutes() {
       onUndo={() => dispatch(undo())}
       onRedo={() => dispatch(redo())}
       onAddSlide={onAddSlide}
-      onDeleteSlide={onDeleteSlide}
+      onAddSlideFromTemplate={onAddSlideFromTemplate}
       onAddText={onAddText}
       onAddImageFile={onAddImage}
-      onDeleteSelected={onDeleteElement}
+      onExportPdf={onExportPdf}
+      onExportJson={onExportJson}
+      onImportJsonFile={onImportJsonFile}
+      onSetBgImageFile={onSetBgImage}
+      onAlignElements={onAlignElements}
+      onDeleteAny={() => {
+        if (presentation.selection.elementIds.length > 0) {
+          onDeleteElement();
+        } else {
+          onDeleteSlide();
+        }
+      }}
       onSetBgColor={onSetBgColor}
       onSetBgNone={onSetBgNone}
       onOpenPlayer={() => navigate(playerRoute)}
@@ -566,7 +677,7 @@ export default function ProtectedRoutes() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1 className="auth-title">Loading presentation...</h1>
+          <h1 className="auth-title">{t("routes.loadingPresentation")}</h1>
         </div>
       </div>
     );
@@ -603,3 +714,5 @@ export default function ProtectedRoutes() {
     </Routes>
   );
 }
+
+

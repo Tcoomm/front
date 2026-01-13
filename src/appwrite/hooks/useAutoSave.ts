@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { MutableRefObject } from "react";
+import type { RefObject } from "react";
 import type { Models } from "appwrite";
 import type { Presentation } from "../../types";
 
@@ -15,8 +15,8 @@ type UseAutoSaveOptions = {
   getUserPermissions: (currentUser: Models.User<Models.Preferences>) => string[];
   setSaveStatus: (status: "idle" | "saving" | "saved") => void;
   setSaveError: (message: string | null) => void;
-  saveTimeoutRef: MutableRefObject<number | null>;
-  lastSavedRef: MutableRefObject<string>;
+  saveTimeoutRef: RefObject<number | null>;
+  lastSavedRef: RefObject<string>;
 };
 
 function getErrorMessage(err: unknown) {
@@ -49,7 +49,7 @@ export function useAutoSave({
   useEffect(() => {
     if (!user || !appwriteConfigured || !appwriteDataConfigured) return;
     if (!isEditor) return;
-    const payload = JSON.stringify(presentation);
+    const payload = JSON.stringify(presentation); // Сериализую презентацию в JSON для сохранения //
     if (payload === lastSavedRef.current) return;
 
     if (saveTimeoutRef.current) {
@@ -65,12 +65,12 @@ export function useAutoSave({
         setSaveError(null);
         try {
           try {
-            await databases.updateDocument(databaseId!, presentationsCollectionId!, presentationId, {
+            await databases.updateDocument(databaseId!, presentationsCollectionId!, presentationId, { // Обновляю документ, если он уже есть
               data: payload,
             });
           } catch (err) {
             if (isNotFound(err)) {
-              await databases.createDocument(
+              await databases.createDocument( // Если документа нет, создаю новый
                 databaseId!,
                 presentationsCollectionId!,
                 presentationId,

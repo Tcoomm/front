@@ -7,7 +7,7 @@ type AuthContextValue = ReturnType<typeof useAuth>;
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const auth = useAuth({ account, appwriteConfigured });
+  const auth = useAuth({ account, appwriteConfigured }); // Контекст раздаёт состояние авторизации по всему приложению
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 

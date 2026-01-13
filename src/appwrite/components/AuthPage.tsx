@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { appwriteConfigured } from "../index";
 import { useAuthContext } from "../auth/AuthContext";
+import { useI18n } from "../../translations";
 import "../styles/auth.css";
 
 type AuthPageProps = {
@@ -10,6 +11,7 @@ type AuthPageProps = {
 
 export default function AuthPage({ mode }: AuthPageProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const {
     authReady,
     authMode,
@@ -36,9 +38,9 @@ export default function AuthPage({ mode }: AuthPageProps) {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1 className="auth-title">Appwrite is not configured</h1>
+          <h1 className="auth-title">{t("auth.notConfigured.title")}</h1>
           <p className="auth-note">
-            Set <code>VITE_APPWRITE_ENDPOINT</code> and <code>VITE_APPWRITE_PROJECT_ID</code> in your env.
+            {t("auth.notConfigured.note")}
           </p>
         </div>
       </div>
@@ -49,7 +51,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1 className="auth-title">Loading session...</h1>
+          <h1 className="auth-title">{t("auth.loadingSession")}</h1>
         </div>
       </div>
     );
@@ -61,10 +63,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleAuthSubmit}>
-        <h1 className="auth-title">{authMode === "login" ? "Sign in" : "Create account"}</h1>
+        <h1 className="auth-title">
+          {authMode === "login" ? t("auth.signIn") : t("auth.createAccount")}
+        </h1>
         {authMode === "register" ? (
           <label className="auth-row">
-            <span>Name</span>
+            <span>{t("auth.name")}</span>
             <input
               className="auth-input"
               value={name}
@@ -74,7 +78,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           </label>
         ) : null}
         <label className="auth-row">
-          <span>Email</span>
+          <span>{t("auth.email")}</span>
           <input
             className="auth-input"
             type="email"
@@ -84,7 +88,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           />
         </label>
         <label className="auth-row">
-          <span>Password</span>
+          <span>{t("auth.password")}</span>
           <div className="auth-password">
             <input
               className="auth-input"
@@ -97,7 +101,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
               className="auth-eye"
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
             >
               <svg className="auth-eye-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -114,7 +118,11 @@ export default function AuthPage({ mode }: AuthPageProps) {
         </label>
         {authError ? <div className="auth-error">{authError}</div> : null}
         <button className="auth-btn" type="submit" disabled={!canSubmit || authBusy}>
-          {authBusy ? "Please wait..." : authMode === "login" ? "Sign in" : "Register"}
+          {authBusy
+            ? t("auth.pleaseWait")
+            : authMode === "login"
+            ? t("auth.signIn")
+            : t("auth.register")}
         </button>
         <button
           className="auth-link"
@@ -125,9 +133,11 @@ export default function AuthPage({ mode }: AuthPageProps) {
           }}
           disabled={authBusy}
         >
-          {authMode === "login" ? "Need an account? Register" : "Already have an account? Sign in"}
+          {authMode === "login" ? t("auth.needAccount") : t("auth.haveAccount")}
         </button>
       </form>
     </div>
   );
 }
+
+

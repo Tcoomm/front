@@ -33,9 +33,9 @@ export function usePlayerControls({
     if (!isPlayer) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "ArrowRight") {
-        setPlayerIndex((prev) => Math.min(slides.length - 1, prev + 1));
+        setPlayerIndex((prev) => Math.min(slides.length - 1, prev + 1)); // Перемещаюсь к следующему слайду
       } else if (e.key === "ArrowLeft") {
-        setPlayerIndex((prev) => Math.max(0, prev - 1));
+        setPlayerIndex((prev) => Math.max(0, prev - 1)); // Перемещаюсь к предыдущему слайду
       } else if (e.key === "Escape") {
         onExit();
       }
@@ -52,8 +52,8 @@ export function usePlayerControls({
       raf = requestAnimationFrame(() => {
         const w = window.innerWidth;
         const h = window.innerHeight;
-        const scale = Math.max(w / slideWidth, h / slideHeight);
-        setPlayerScale(Number.isFinite(scale) && scale > 0 ? scale : 1);
+        const scale = Math.min(w / slideWidth, h / slideHeight); // Вычисляю масштаб, чтобы слайд вписался в окно
+        setPlayerScale(Number.isFinite(scale) && scale > 0 ? scale : 1); // Обновляю состояние масштаба
       });
     };
     updateScale();

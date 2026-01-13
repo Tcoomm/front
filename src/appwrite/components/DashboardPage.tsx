@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "../../translations";
 import type { Models } from "appwrite";
 import "../styles/dashboard.css";
 
@@ -49,52 +50,57 @@ export default function DashboardPage({
   onDelete,
   formatUpdatedAt,
 }: DashboardPageProps) {
+  const { t } = useI18n();
   return (
     <div className="dashboard-page">
       <div className="dash-header">
         <div>
-          <h1 className="dash-title">Your presentations</h1>
-          <div className="dash-subtitle">Signed in as: {user?.email}</div>
+          <h1 className="dash-title">{t("dashboard.title")}</h1>
+          <div className="dash-subtitle">
+            {t("dashboard.signedInAs")} {user?.email}
+          </div>
         </div>
         <div className="dash-actions">
           <button className="dash-btn" onClick={onLogout} disabled={authBusy}>
-            Sign out
+            {t("dashboard.signOut")}
           </button>
           <button className="dash-btn-primary" onClick={onOpenCreate}>
-            New presentation
+            {t("dashboard.newPresentation")}
           </button>
         </div>
       </div>
 
       {!appwriteDataConfigured ? (
-        <div className="dash-error">Appwrite DB/Storage is not configured.</div>
+        <div className="dash-error">{t("dashboard.notConfigured")}</div>
       ) : null}
       {listError ? <div className="dash-error">{listError}</div> : null}
-      {listLoading ? <div className="dash-loading">Loading...</div> : null}
+      {listLoading ? <div className="dash-loading">{t("dashboard.loading")}</div> : null}
 
       {!listLoading && presentations.length === 0 ? (
         <div className="dash-empty">
-          <div className="dash-empty-title">No presentations yet</div>
-          <div className="dash-empty-note">Create a new presentation to get started.</div>
+          <div className="dash-empty-title">{t("dashboard.empty.title")}</div>
+          <div className="dash-empty-note">{t("dashboard.empty.note")}</div>
           <button className="dash-btn-primary" onClick={onOpenCreate}>
-            Create presentation
+            {t("dashboard.empty.create")}
           </button>
         </div>
       ) : (
         <div className="dash-grid">
           {presentations.map((item) => (
             <div className="dash-card" key={item.id}>
-              <div className="dash-card-title">{item.title || "Untitled"}</div>
-              <div className="dash-meta">Updated: {formatUpdatedAt(item.updatedAt)}</div>
+              <div className="dash-card-title">{item.title || t("dashboard.untitled")}</div>
+              <div className="dash-meta">
+                {t("dashboard.updated")} {formatUpdatedAt(item.updatedAt)}
+              </div>
               <div className="dash-card-actions">
                 <button className="dash-btn" onClick={() => onOpenPresentation(item.id)}>
-                  Open
+                  {t("dashboard.open")}
                 </button>
                 <button className="dash-btn-ghost" onClick={() => onOpenRename(item.id, item.title)}>
-                  Rename
+                  {t("dashboard.rename")}
                 </button>
                 <button className="dash-btn-danger" onClick={() => onDelete(item.id)}>
-                  Delete
+                  {t("dashboard.delete")}
                 </button>
               </div>
             </div>
@@ -106,10 +112,12 @@ export default function DashboardPage({
         <div className="modal-backdrop" onClick={onCloseModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-title">
-              {modalMode === "create" ? "Create presentation" : "Rename presentation"}
+              {modalMode === "create"
+                ? t("dashboard.modal.createTitle")
+                : t("dashboard.modal.renameTitle")}
             </div>
             <label className="modal-row">
-              <span>Title</span>
+              <span>{t("dashboard.modal.titleLabel")}</span>
               <input
                 className="modal-input"
                 value={newTitle}
@@ -119,15 +127,15 @@ export default function DashboardPage({
             </label>
             <div className="modal-actions">
               <button className="dash-btn" onClick={onCloseModal}>
-                Cancel
+                {t("dashboard.modal.cancel")}
               </button>
               {modalMode === "create" ? (
                 <button className="dash-btn-primary" onClick={onCreate}>
-                  Create
+                  {t("dashboard.modal.create")}
                 </button>
               ) : (
                 <button className="dash-btn-primary" onClick={onRename}>
-                  Save
+                  {t("dashboard.modal.save")}
                 </button>
               )}
             </div>
@@ -137,3 +145,5 @@ export default function DashboardPage({
     </div>
   );
 }
+
+

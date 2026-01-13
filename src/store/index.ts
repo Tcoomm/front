@@ -99,6 +99,7 @@ export const store = configureStore({
 export {
     renamePresentation,
     addSlide,
+    addSlideFromTemplate,
     removeSlide,
     selectSlide,
     selectElements,
@@ -109,6 +110,17 @@ export {
     removeElement,
     setSlideBackground,
     updateTextContent,
+    updateTextBackground,
+    updateTextFontSize,
+    updateTextFontFamily,
+    updateTextColor,
+    updateTextBorder,
+    alignElements,
+    updateTextAlign,
+    updateTextStyle,
+    updateImageSrc,
+    duplicateElements,
+    pasteElements,
     reorderSlides,
 } from "./editorSlice";
 
