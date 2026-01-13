@@ -8,9 +8,6 @@ type Props = {
     onAddSlideFromTemplate: (templateId: string) => void;
     onAddText: () => void;
     onAddImageFile: (file: File) => void;
-    onExportPdf: () => void;
-    onExportJson: () => void;
-    onImportJsonFile: (file: File) => void;
     onSetBgImageFile: (file: File) => void;
     onAlignElements: (axis: "x" | "y", mode: "start" | "center" | "end") => void;
     onDeleteAny: () => void;
@@ -27,9 +24,6 @@ export default function Toolbar(props: Props) {
     const [alignOpen, setAlignOpen] = useState(false);
     const [alignPos, setAlignPos] = useState<{ left: number; top: number } | null>(null);
     const alignBtnRef = useRef<HTMLButtonElement | null>(null);
-    const [exportOpen, setExportOpen] = useState(false);
-    const [exportPos, setExportPos] = useState<{ left: number; top: number } | null>(null);
-    const exportBtnRef = useRef<HTMLButtonElement | null>(null);
 
     function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -45,13 +39,6 @@ export default function Toolbar(props: Props) {
         e.target.value = "";
     }
 
-    function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        props.onImportJsonFile(file);
-        e.target.value = "";
-    }
-
     function toggleAlignMenu() {
         setAlignOpen((prev) => {
             const next = !prev;
@@ -60,19 +47,6 @@ export default function Toolbar(props: Props) {
                 setAlignPos({ left: rect.left, top: rect.bottom + 6 });
             } else if (!next) {
                 setAlignPos(null);
-            }
-            return next;
-        });
-    }
-
-    function toggleExportMenu() {
-        setExportOpen((prev) => {
-            const next = !prev;
-            if (next && exportBtnRef.current) {
-                const rect = exportBtnRef.current.getBoundingClientRect();
-                setExportPos({ left: rect.left, top: rect.bottom + 6 });
-            } else if (!next) {
-                setExportPos(null);
             }
             return next;
         });
@@ -96,46 +70,10 @@ export default function Toolbar(props: Props) {
             <button className={s.btn} onClick={props.onAddText}>
                 {t("toolbar.addText")}
             </button>
-            <div className={s.alignWrap}>
-                <button className={s.btn} ref={exportBtnRef} onClick={toggleExportMenu}>
-                    {t("toolbar.export")}
-                </button>
-                {exportOpen && exportPos && (
-                    <div
-                        className={s.alignMenu}
-                        style={{ left: exportPos.left, top: exportPos.top }}
-                        onMouseLeave={() => setExportOpen(false)}
-                    >
-                        <button
-                            className={s.alignItem}
-                            onClick={() => {
-                                props.onExportPdf();
-                                setExportOpen(false);
-                            }}
-                        >
-                            {t("toolbar.export.pdf")}
-                        </button>
-                        <button
-                            className={s.alignItem}
-                            onClick={() => {
-                                props.onExportJson();
-                                setExportOpen(false);
-                            }}
-                        >
-                            {t("toolbar.export.json")}
-                        </button>
-                    </div>
-                )}
-            </div>
 
             <label className={s.fileBtn}>
                 <input className={s.fileInput} type="file" accept="image/*" onChange={handleFile} />
                 {t("toolbar.addImage")}
-            </label>
-
-            <label className={s.fileBtn}>
-                <input className={s.fileInput} type="file" accept=".json,application/json" onChange={handleImportFile} />
-                {t("toolbar.import.json")}
             </label>
 
             <div className={s.alignWrap}>

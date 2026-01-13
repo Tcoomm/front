@@ -65,6 +65,7 @@ export default function ProtectedRoutes() {
   const [newTitle, setNewTitle] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activePresentationId, setActivePresentationId] = useState<string | null>(null);
+  const [dashboardSelectedId, setDashboardSelectedId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const playerStageRef = useRef<HTMLDivElement | null>(null);
   const saveTimeoutRef = useRef<number | null>(null);
@@ -108,6 +109,11 @@ export default function ProtectedRoutes() {
     databaseId,
     presentationsCollectionId,
   });
+  useEffect(() => {
+    if (!dashboardSelectedId) return;
+    if (presentations.some((item) => item.id === dashboardSelectedId)) return;
+    setDashboardSelectedId(null);
+  }, [presentations, dashboardSelectedId]);
   const getUserPermissions = useCallback(
     (currentUser: Models.User<Models.Preferences>) => [
       Permission.read(Role.user(currentUser.$id)),
@@ -169,6 +175,48 @@ export default function ProtectedRoutes() {
 
   function onExportJson() {
     downloadPresentationJson(presentation);
+  }
+
+  async function getPresentationForExport(id: string) {
+    if (!appwriteConfigured || !appwriteDataConfigured) {
+      setListError(t("dashboard.notConfigured"));
+      return null;
+    }
+    try {
+      const doc = await databases.getDocument(databaseId!, presentationsCollectionId!, id);
+      const raw = (doc as { data?: string }).data;
+      if (typeof raw !== "string") {
+        setListError("Saved presentation is missing data.");
+        return null;
+      }
+      const result = parsePresentationJson(raw, lang);
+      if (!result.ok) {
+        setListError(result.error);
+        return null;
+      }
+      if (result.presentation.ownerId && result.presentation.ownerId !== user?.$id) {
+        setListError("You are not authorized to open this presentation.");
+        return null;
+      }
+      return result.presentation;
+    } catch (err) {
+      setListError(getErrorMessage(err));
+      return null;
+    }
+  }
+
+  async function onDashboardExportPdf() {
+    if (!dashboardSelectedId) return;
+    const pres = await getPresentationForExport(dashboardSelectedId);
+    if (!pres) return;
+    openPdfExport(pres, SLIDE_WIDTH, SLIDE_HEIGHT);
+  }
+
+  async function onDashboardExportJson() {
+    if (!dashboardSelectedId) return;
+    const pres = await getPresentationForExport(dashboardSelectedId);
+    if (!pres) return;
+    downloadPresentationJson(pres);
   }
 
   async function onImportJsonFile(file: File) {
@@ -617,6 +665,11 @@ export default function ProtectedRoutes() {
       onRename={handleRename}
       onLogout={handleLogout}
       onOpenCreate={openCreateModal}
+      onExportPdf={onDashboardExportPdf}
+      onExportJson={onDashboardExportJson}
+      onImportJsonFile={onImportJsonFile}
+      selectedPresentationId={dashboardSelectedId}
+      onSelectPresentation={setDashboardSelectedId}
       onOpenPresentation={openPresentation}
       onOpenRename={openRenameModal}
       onDelete={handleDelete}
@@ -640,9 +693,6 @@ export default function ProtectedRoutes() {
       onAddSlideFromTemplate={onAddSlideFromTemplate}
       onAddText={onAddText}
       onAddImageFile={onAddImage}
-      onExportPdf={onExportPdf}
-      onExportJson={onExportJson}
-      onImportJsonFile={onImportJsonFile}
       onSetBgImageFile={onSetBgImage}
       onAlignElements={onAlignElements}
       onDeleteAny={() => {

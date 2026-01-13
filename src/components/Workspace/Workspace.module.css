@@ -73,6 +73,8 @@
     width: 100%;
     height: 100%;
     box-sizing: border-box;
+    direction: ltr;
+    unicode-bidi: plaintext;
 }
 
 .img {
@@ -161,6 +163,8 @@
     box-sizing: border-box;
     white-space: pre-wrap;
     word-break: break-word;
+    direction: ltr;
+    unicode-bidi: plaintext;
 }
 
 .textShell {

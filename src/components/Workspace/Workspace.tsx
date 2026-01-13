@@ -33,8 +33,10 @@ export default function Workspace() {
     const [editingId, setEditingId] = useState<ID | null>(null);
     const [editingValue, setEditingValue] = useState("");
     const [editingRich, setEditingRich] = useState(false);
+    const [editingWasRich, setEditingWasRich] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const richEditRef = useRef<HTMLDivElement | null>(null);
+    const lastEditingIdRef = useRef<ID | null>(null);
     const selectionRef = useRef<Range | null>(null);
     const [textMenu, setTextMenu] = useState<{ x: number; y: number; elId: ID } | null>(null);
 
@@ -44,6 +46,21 @@ export default function Workspace() {
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/\"/g, "&quot;");
+    }
+
+    function decodeHtml(value: string) {
+        const el = document.createElement("textarea");
+        el.innerHTML = value;
+        return el.value;
+    }
+
+    function htmlToPlainText(value: string) {
+        return decodeHtml(
+            value
+                .replace(/<br\s*\/?>/gi, "\n")
+                .replace(/<\/(div|p)>/gi, "\n")
+                .replace(/<[^>]+>/g, "")
+        );
     }
 
     // auto-resize textarea to fit content within box
@@ -57,6 +74,10 @@ export default function Workspace() {
 
     useEffect(() => {
         if (editingId && editingRich && richEditRef.current) {
+            if (lastEditingIdRef.current !== editingId) {
+                richEditRef.current.innerHTML = editingValue;
+                lastEditingIdRef.current = editingId;
+            }
             richEditRef.current.focus();
         }
     }, [editingId, editingRich]);
@@ -105,22 +126,27 @@ export default function Workspace() {
     function startEditing(el: SlideElement) {
         if (el.kind !== "text") return;
         const hasMarkup = /<[^>]+>/.test(el.content);
-        const html = el.isRichText || hasMarkup ? el.content : escapeHtml(el.content).replace(/\n/g, "<br/>");
+        const wasRich = el.isRichText || hasMarkup;
+        const html = wasRich ? el.content : escapeHtml(el.content).replace(/\n/g, "<br/>");
+        lastEditingIdRef.current = null;
         setEditingId(el.id);
         setEditingValue(html);
         setEditingRich(true);
+        setEditingWasRich(wasRich);
     }
 
     function stopEditing(save: boolean, el: SlideElement) {
         if (el.kind !== "text") return;
         if (save && activeSlide) {
             const hasMarkup = /<[^>]+>/.test(editingValue);
-            const isRichText = editingRich || hasMarkup;
+            const hasFormatting =
+                /<(b|strong|i|em|u|span|font)\b/i.test(editingValue) || /style\s*=/.test(editingValue);
+            const isRichText = editingWasRich || (hasMarkup && hasFormatting);
             dispatch(
                 updateTextContent({
                     slideId: activeSlide.id,
                     elId: el.id,
-                    content: editingValue,
+                    content: isRichText ? editingValue : htmlToPlainText(editingValue),
                     isRichText,
                 })
             );
@@ -128,6 +154,8 @@ export default function Workspace() {
         setEditingId(null);
         setEditingValue("");
         setEditingRich(false);
+        setEditingWasRich(false);
+        lastEditingIdRef.current = null;
     }
 
     function applyRichCommand(command: "bold" | "italic" | "underline") {
@@ -176,6 +204,17 @@ export default function Workspace() {
             selectionRef.current = range;
         }
     }
+
+    useEffect(() => {
+        if (!editingId || !editingRich) return;
+        function handleSelectionChange() {
+            captureSelection();
+        }
+        document.addEventListener("selectionchange", handleSelectionChange);
+        return () => {
+            document.removeEventListener("selectionchange", handleSelectionChange);
+        };
+    }, [editingId, editingRich]);
 
     useEffect(() => {
         if (!textMenu) return;
@@ -233,6 +272,8 @@ export default function Workspace() {
                                           textAlign: el.textAlign,
                                           backgroundColor: "transparent",
                                           boxSizing: "border-box",
+                                          direction: "ltr",
+                                          unicodeBidi: "plaintext",
                                           fontWeight: !isRich && el.bold ? "700" : "400",
                                           fontStyle: !isRich && el.italic ? "italic" : "normal",
                                           textDecoration: !isRich && el.underline ? "underline" : "none",
@@ -263,6 +304,7 @@ export default function Workspace() {
                                     }}
                                     onDoubleClick={(e) => {
                                         if (el.kind === "text") {
+                                            e.preventDefault();
                                             e.stopPropagation();
                                             startEditing(el);
                                         }
@@ -272,6 +314,7 @@ export default function Workspace() {
 
                                         // If editing text, don't start drag/select
                                         if (editingId) return;
+                                        if (el.kind === "text" && e.detail >= 2) return;
 
                                         // Calculate what selection will be after this click
                                         const current = [...selectedIds];
@@ -308,10 +351,12 @@ export default function Workspace() {
                                                     <div
                                                         className={s.textarea}
                                                         ref={richEditRef}
+                                                        dir="ltr"
                                                         contentEditable
                                                         suppressContentEditableWarning
                                                         style={textStyles}
-                                                        dangerouslySetInnerHTML={{ __html: editingValue }}
+                                                        onMouseUp={captureSelection}
+                                                        onKeyUp={captureSelection}
                                                         onInput={(ev) => {
                                                             const target = ev.currentTarget;
                                                             setEditingValue(target.innerHTML);
@@ -341,6 +386,7 @@ export default function Workspace() {
                                                         autoFocus
                                                         ref={textareaRef}
                                                         style={textStyles}
+                                                        dir="ltr"
                                                         value={editingValue}
                                                         onChange={(ev) => setEditingValue(ev.target.value)}
                                                         onBlur={() => stopEditing(true, el)}

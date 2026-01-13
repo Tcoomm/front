@@ -20,9 +20,6 @@ type EditorPageProps = {
   onAddSlideFromTemplate: (templateId: string) => void;
   onAddText: () => void;
   onAddImageFile: (file: File) => void;
-  onExportPdf: () => void;
-  onExportJson: () => void;
-  onImportJsonFile: (file: File) => void;
   onSetBgImageFile: (file: File) => void;
   onAlignElements: (axis: "x" | "y", mode: "start" | "center" | "end") => void;
   onDeleteAny: () => void;
@@ -46,9 +43,6 @@ export default function EditorPage({
   onAddSlideFromTemplate,
   onAddText,
   onAddImageFile,
-  onExportPdf,
-  onExportJson,
-  onImportJsonFile,
   onSetBgImageFile,
   onAlignElements,
   onDeleteAny,
@@ -71,9 +65,6 @@ export default function EditorPage({
             onAddSlideFromTemplate={onAddSlideFromTemplate}
             onAddText={onAddText}
             onAddImageFile={onAddImageFile}
-            onExportPdf={onExportPdf}
-            onExportJson={onExportJson}
-            onImportJsonFile={onImportJsonFile}
             onSetBgImageFile={onSetBgImageFile}
             onAlignElements={onAlignElements}
             onDeleteAny={onDeleteAny}
