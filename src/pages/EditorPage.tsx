@@ -1,4 +1,5 @@
 import React from "react";
+import type { ID } from "../types";
 import { useI18n } from "../translations";
 import TitleBar from "../components/TitleBar/TitleBar";
 import SlideList from "../components/SlideList/SlideList";
@@ -20,6 +21,7 @@ type EditorPageProps = {
   onAddSlideFromTemplate: (templateId: string) => void;
   onAddText: () => void;
   onAddImageFile: (file: File) => void;
+  onReplaceImageFile: (elId: ID, file: File) => void;
   onSetBgImageFile: (file: File) => void;
   onAlignElements: (axis: "x" | "y", mode: "start" | "center" | "end") => void;
   onDeleteAny: () => void;
@@ -43,6 +45,7 @@ export default function EditorPage({
   onAddSlideFromTemplate,
   onAddText,
   onAddImageFile,
+  onReplaceImageFile,
   onSetBgImageFile,
   onAlignElements,
   onDeleteAny,
@@ -106,7 +109,7 @@ export default function EditorPage({
 
       <div className="grid editor-grid">
         <SlideList />
-        <Workspace />
+        <Workspace onReplaceImageFile={onReplaceImageFile} />
       </div>
     </div>
   );

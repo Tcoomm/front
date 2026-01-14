@@ -36,15 +36,11 @@ export function buildPdfHtml(
                 ? `border:${el.borderWidth}px solid ${el.borderColor ?? "#111"};`
                 : "border:none;";
             const style = [
-              `left:${el.position.x}px`,
-              `top:${el.position.y}px`,
-              `width:${el.size.width}px`,
-              `height:${el.size.height}px`,
               `color:${el.color}`,
               `font-size:${el.fontSize}px`,
               `font-family:${el.fontFamily}`,
-              `background-color:${el.backgroundColor ?? "transparent"}`,
               `text-align:${el.textAlign ?? "left"}`,
+              `background-color: transparent`,
               border,
             ];
             if (!isRich) {
@@ -52,7 +48,9 @@ export function buildPdfHtml(
               style.push(`font-style:${el.italic ? "italic" : "normal"}`);
               style.push(`text-decoration:${el.underline ? "underline" : "none"}`);
             }
-            return `<div class="el text" style="${style.join("; ")};">${content}</div>`;
+            return `<div class="el text-shell" style="left:${el.position.x}px; top:${el.position.y}px; width:${el.size.width}px; height:${el.size.height}px; background-color:${el.backgroundColor ?? "transparent"}; ${border}">
+              <div class="text" style="${style.join("; ")};">${content}</div>
+            </div>`;
           }
           return `<img class="el img" src="${el.src}" alt="" style="left:${el.position.x}px; top:${el.position.y}px; width:${el.size.width}px; height:${el.size.height}px;" />`;
         })
@@ -89,13 +87,39 @@ export function buildPdfHtml(
     }
     .slide:last-child { page-break-after: auto; }
     .el { position: absolute; box-sizing: border-box; }
+    .text-shell {
+      position: absolute;
+      box-sizing: border-box;
+      border-radius: 6px;
+      overflow: hidden;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
     .text {
+      width: 100%;
+      height: 100%;
       padding: 8px 10px;
       border-radius: 6px;
       white-space: pre-wrap;
       word-break: break-word;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      position: absolute;
+      top: 0;
+      left: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+      letter-spacing: -0.2px;
+      word-spacing: -0.3px;
+    }
+    .text * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    .text ul,
+    .text ol {
+      padding-left: 18px;
     }
     .img { object-fit: fill; }
   </style>

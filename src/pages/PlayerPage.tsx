@@ -61,50 +61,52 @@ export default function PlayerPage({
               ? currentSlide.elements.map((el) => (
                   <div
                     key={el.id}
-                    className={`player-el ${el.kind === "text" ? "player-text" : "player-image"}`}
+                    className={`player-el ${el.kind === "text" ? "player-text-wrap" : "player-image"}`}
                     style={{
                       left: el.position.x,
                       top: el.position.y,
                       width: Math.max(20, el.size.width),
                       height: Math.max(20, el.size.height),
-                      color: el.kind === "text" ? el.color : undefined,
-                      fontSize: el.kind === "text" ? `${el.fontSize}px` : undefined,
-                      fontFamily: el.kind === "text" ? el.fontFamily : undefined,
-                      backgroundColor:
-                        el.kind === "text" ? el.backgroundColor ?? "transparent" : undefined,
-                      textAlign: el.kind === "text" ? el.textAlign ?? "left" : undefined,
-                      fontWeight:
-                        el.kind === "text" &&
-                        !(el.isRichText || /<[^>]+>/.test(el.content)) &&
-                        el.bold
-                          ? "700"
-                          : undefined,
-                      fontStyle:
-                        el.kind === "text" &&
-                        !(el.isRichText || /<[^>]+>/.test(el.content)) &&
-                        el.italic
-                          ? "italic"
-                          : undefined,
-                      textDecoration:
-                        el.kind === "text" &&
-                        !(el.isRichText || /<[^>]+>/.test(el.content)) &&
-                        el.underline
-                          ? "underline"
-                          : undefined,
-                      border:
-                        el.kind === "text" && el.borderWidth > 0
-                          ? `${el.borderWidth}px solid ${el.borderColor ?? "#111"}`
-                          : undefined,
                     }}
                   >
                     {el.kind === "text" ? (
                       <div
-                        dangerouslySetInnerHTML={{
-                          __html: el.isRichText || /<[^>]+>/.test(el.content)
-                            ? el.content
-                            : escapeHtml(el.content).replace(/\n/g, "<br/>"),
+                        className="player-text-shell"
+                        style={{
+                          backgroundColor: el.backgroundColor ?? "transparent",
+                          border:
+                            el.borderWidth > 0
+                              ? `${el.borderWidth}px solid ${el.borderColor ?? "#111"}`
+                              : "none",
                         }}
-                      />
+                      >
+                        <div
+                          className="player-text"
+                          style={{
+                            color: el.color,
+                            fontSize: `${el.fontSize}px`,
+                            fontFamily: el.fontFamily,
+                            textAlign: el.textAlign ?? "left",
+                            fontWeight:
+                              !(el.isRichText || /<[^>]+>/.test(el.content)) && el.bold
+                                ? "700"
+                                : "400",
+                            fontStyle:
+                              !(el.isRichText || /<[^>]+>/.test(el.content)) && el.italic
+                                ? "italic"
+                                : "normal",
+                            textDecoration:
+                              !(el.isRichText || /<[^>]+>/.test(el.content)) && el.underline
+                                ? "underline"
+                                : "none",
+                          }}
+                          dangerouslySetInnerHTML={{
+                            __html: el.isRichText || /<[^>]+>/.test(el.content)
+                              ? el.content
+                              : escapeHtml(el.content).replace(/\n/g, "<br/>"),
+                          }}
+                        />
+                      </div>
                     ) : (
                       <img src={el.src} className="player-img" draggable={false} />
                     )}

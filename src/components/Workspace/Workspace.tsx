@@ -18,9 +18,14 @@ import {
 import { useDrag } from "../../hooks/useDrag";
 import { useResize } from "../../hooks/useResize";
 import TextContextMenu from "../TextContextMenu/TextContextMenu";
+import ImageContextMenu from "../ImageContextMenu/ImageContextMenu";
 import s from "./Workspace.module.css";
 
-export default function Workspace() {
+type WorkspaceProps = {
+    onReplaceImageFile: (elId: ID, file: File) => void;
+};
+
+export default function Workspace({ onReplaceImageFile }: WorkspaceProps) {
     const dispatch = useDispatch();
     const presentation = useSelector(selectPresentation);
     const activeSlide = useMemo(() => {
@@ -39,6 +44,8 @@ export default function Workspace() {
     const lastEditingIdRef = useRef<ID | null>(null);
     const selectionRef = useRef<Range | null>(null);
     const [textMenu, setTextMenu] = useState<{ x: number; y: number; elId: ID } | null>(null);
+    const [imageMenu, setImageMenu] = useState<{ x: number; y: number; elId: ID } | null>(null);
+    const suppressBlurRef = useRef(false);
 
     function escapeHtml(value: string) {
         return value
@@ -170,6 +177,7 @@ export default function Workspace() {
         richEditRef.current.focus();
         document.execCommand(command, false);
         setEditingValue(richEditRef.current.innerHTML);
+        setEditingWasRich(true);
         return true;
     }
 
@@ -192,6 +200,7 @@ export default function Workspace() {
             node.replaceWith(span);
         });
         setEditingValue(richEditRef.current.innerHTML);
+        setEditingWasRich(true);
         return true;
     }
 
@@ -231,6 +240,22 @@ export default function Workspace() {
             window.removeEventListener("keydown", handleKey);
         };
     }, [textMenu]);
+
+    useEffect(() => {
+        if (!imageMenu) return;
+        function handleClick() {
+            setImageMenu(null);
+        }
+        function handleKey(e: KeyboardEvent) {
+            if (e.key === "Escape") setImageMenu(null);
+        }
+        window.addEventListener("mousedown", handleClick);
+        window.addEventListener("keydown", handleKey);
+        return () => {
+            window.removeEventListener("mousedown", handleClick);
+            window.removeEventListener("keydown", handleKey);
+        };
+    }, [imageMenu]);
 
     // background
     const bg: React.CSSProperties = {};
@@ -334,14 +359,19 @@ export default function Workspace() {
                                         startDrag(e, el.id, dragIds);
                                     }}
                                     onContextMenu={(e) => {
-                                        if (el.kind !== "text") return;
                                         e.preventDefault();
                                         e.stopPropagation();
                                         handleSelect(el, false);
-                                        if (editingId === el.id && editingRich) {
-                                            captureSelection();
+                                        setImageMenu(null);
+                                        if (el.kind === "text") {
+                                            if (editingId === el.id && editingRich) {
+                                                captureSelection();
+                                            }
+                                            setTextMenu({ x: e.clientX, y: e.clientY, elId: el.id });
+                                            return;
                                         }
-                                        setTextMenu({ x: e.clientX, y: e.clientY, elId: el.id });
+                                        setTextMenu(null);
+                                        setImageMenu({ x: e.clientX, y: e.clientY, elId: el.id });
                                     }}
                                 >
                                     {el.kind === "text" ? (
@@ -359,9 +389,22 @@ export default function Workspace() {
                                                         onKeyUp={captureSelection}
                                                         onInput={(ev) => {
                                                             const target = ev.currentTarget;
-                                                            setEditingValue(target.innerHTML);
+                                                            const html = target.innerHTML;
+                                                            if (
+                                                                /<(b|strong|i|em|u|span|font)\b/i.test(html) ||
+                                                                /style\s*=/.test(html)
+                                                            ) {
+                                                                setEditingWasRich(true);
+                                                            }
+                                                            setEditingValue(html);
                                                         }}
-                                                        onBlur={() => stopEditing(true, el)}
+                                                        onBlur={() => {
+                                                            if (suppressBlurRef.current) {
+                                                                richEditRef.current?.focus();
+                                                                return;
+                                                            }
+                                                            stopEditing(true, el);
+                                                        }}
                                                     onKeyDown={(ev) => {
                                                         if (ev.key === "Escape") {
                                                             ev.preventDefault();
@@ -389,7 +432,10 @@ export default function Workspace() {
                                                         dir="ltr"
                                                         value={editingValue}
                                                         onChange={(ev) => setEditingValue(ev.target.value)}
-                                                        onBlur={() => stopEditing(true, el)}
+                                                        onBlur={() => {
+                                                            if (suppressBlurRef.current) return;
+                                                            stopEditing(true, el);
+                                                        }}
                                                         onKeyDown={(ev) => {
                                                             if (ev.key === "Escape") {
                                                                 ev.preventDefault();
@@ -471,7 +517,23 @@ export default function Workspace() {
                         <div
                             className={s.menuPopover}
                             style={{ left: textMenu.x, top: textMenu.y }}
-                            onMouseDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => {
+                                const target = e.target as HTMLElement;
+                                const tag = target.tagName;
+                                const isFormControl =
+                                    tag === "INPUT" || tag === "SELECT" || tag === "OPTION" || tag === "TEXTAREA";
+                                suppressBlurRef.current = true;
+                                window.setTimeout(() => {
+                                    suppressBlurRef.current = false;
+                                }, 0);
+                                if (editingId && editingRich) {
+                                    captureSelection();
+                                }
+                                if (!isFormControl) {
+                                    e.preventDefault();
+                                }
+                                e.stopPropagation();
+                            }}
                         >
                             {(() => {
                                 const el = activeSlide.elements.find(
@@ -582,6 +644,31 @@ export default function Workspace() {
                                                     underline: !el.underline,
                                                 })
                                             );
+                                        }}
+                                    />
+                                );
+                            })()}
+                        </div>
+                    ) : null}
+                    {imageMenu && activeSlide ? (
+                        <div
+                            className={s.menuPopover}
+                            style={{ left: imageMenu.x, top: imageMenu.y }}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
+                        >
+                            {(() => {
+                                const el = activeSlide.elements.find(
+                                    (item) => item.id === imageMenu.elId && item.kind === "image"
+                                );
+                                if (!el || el.kind !== "image") return null;
+                                return (
+                                    <ImageContextMenu
+                                        onReplace={(file) => {
+                                            onReplaceImageFile(el.id, file);
+                                            setImageMenu(null);
                                         }}
                                     />
                                 );

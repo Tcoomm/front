@@ -299,6 +299,13 @@ export default function ProtectedRoutes() {
     dispatch(addImage({ slideId: activeSlide.id, src: srcString, size, position }));
   }
 
+  async function onReplaceImageFile(elId: string, file: File) {
+    if (!activeSlide) return;
+    const srcString = await uploadImage(file);
+    if (!srcString) return;
+    dispatch(updateImageSrc({ slideId: activeSlide.id, elId, src: srcString }));
+  }
+
 
   function onDeleteElement() {
     if (!activeSlide || selectedIds.length === 0) return;
@@ -693,6 +700,7 @@ export default function ProtectedRoutes() {
       onAddSlideFromTemplate={onAddSlideFromTemplate}
       onAddText={onAddText}
       onAddImageFile={onAddImage}
+      onReplaceImageFile={onReplaceImageFile}
       onSetBgImageFile={onSetBgImage}
       onAlignElements={onAlignElements}
       onDeleteAny={() => {

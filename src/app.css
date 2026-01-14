@@ -115,21 +115,29 @@
 
 .player-el {
   position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  white-space: pre-wrap;
+}
+
+.player-text-wrap {
+  display: block;
+}
+
+.player-text-shell {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .player-text {
+  width: 100%;
+  height: 100%;
   padding: 8px 10px;
   background: transparent;
-  border-radius: 10px;
   box-shadow: none;
   box-sizing: border-box;
-  align-items: flex-start;
-  justify-content: flex-start;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .player-img {
