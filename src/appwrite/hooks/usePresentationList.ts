@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Models } from "appwrite";
 import type { Presentation } from "../../types";
+import { deserializePresentation } from "../serializePresentation";
 import { Query } from "../index";
 
 type PresentationListItem = { id: string; title: string; updatedAt: string };
@@ -46,14 +47,15 @@ export function usePresentationList({
         Query.orderDesc("$updatedAt"),
         Query.limit(50),
       ]);
-      const next = docs.documents
-        .map((doc) => {
+      const next = await Promise.all(
+        docs.documents.map(async (doc) => {
           const raw = (doc as { data?: string }).data;
           let title = "Untitled";
           let ownerId: string | undefined;
           if (typeof raw === "string") {
             try {
-              const parsed = JSON.parse(raw) as Presentation;
+              const unpacked = await deserializePresentation(raw);
+              const parsed = JSON.parse(unpacked) as Presentation;
               if (typeof parsed.title === "string") title = parsed.title;
               if (typeof parsed.ownerId === "string") ownerId = parsed.ownerId;
             } catch {
@@ -61,9 +63,11 @@ export function usePresentationList({
           }
           return { id: doc.$id, title, updatedAt: doc.$updatedAt, ownerId };
         })
+      );
+      const filtered = next
         .filter((item) => !item.ownerId || item.ownerId === user.$id)
         .map(({ id, title, updatedAt }) => ({ id, title, updatedAt }));
-      setPresentations(next);
+      setPresentations(filtered);
     } catch (err) {
       setListError(getErrorMessage(err));
     } finally {

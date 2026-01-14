@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { RefObject } from "react";
 import type { Models } from "appwrite";
 import type { Presentation } from "../../types";
+import { serializePresentation } from "../serializePresentation";
 
 type UseAutoSaveOptions = {
   user: Models.User<Models.Preferences> | null;
@@ -49,8 +50,8 @@ export function useAutoSave({
   useEffect(() => {
     if (!user || !appwriteConfigured || !appwriteDataConfigured) return;
     if (!isEditor) return;
-    const payload = JSON.stringify(presentation); // Сериализую презентацию в JSON для сохранения //
-    if (payload === lastSavedRef.current) return;
+    const rawPayload = JSON.stringify(presentation);
+    if (rawPayload === lastSavedRef.current) return;
 
     if (saveTimeoutRef.current) {
       window.clearTimeout(saveTimeoutRef.current);
@@ -64,6 +65,7 @@ export function useAutoSave({
         setSaveStatus("saving");
         setSaveError(null);
         try {
+          const payload = await serializePresentation(rawPayload);
           try {
             await databases.updateDocument(databaseId!, presentationsCollectionId!, presentationId, { // Обновляю документ, если он уже есть
               data: payload,
@@ -81,7 +83,7 @@ export function useAutoSave({
               throw err;
             }
           }
-          lastSavedRef.current = payload;
+          lastSavedRef.current = rawPayload;
           setSaveStatus("saved");
         } catch (err) {
           setSaveStatus("idle");
@@ -112,3 +114,5 @@ export function useAutoSave({
     lastSavedRef,
   ]);
 }
+
+

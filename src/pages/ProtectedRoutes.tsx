@@ -47,6 +47,7 @@ import { useI18n } from "../translations";
 import { downloadPresentationJson } from "../export/downloadPresentationJson";
 import { openPdfExport } from "../export/openPdfExport";
 import { parsePresentationJson, prepareImportedPresentation } from "../import/parsePresentationJson";
+import { deserializePresentation } from "../appwrite/serializePresentation";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validatePresentation = ajv.compile(presentationSchema);
@@ -189,7 +190,8 @@ export default function ProtectedRoutes() {
         setListError("Saved presentation is missing data.");
         return null;
       }
-      const result = parsePresentationJson(raw, lang);
+      const unpacked = await deserializePresentation(raw);
+      const result = parsePresentationJson(unpacked, lang);
       if (!result.ok) {
         setListError(result.error);
         return null;
@@ -500,8 +502,9 @@ export default function ProtectedRoutes() {
         return;
       }
       let parsed: Presentation;
+      const unpacked = await deserializePresentation(raw);
       try {
-        parsed = JSON.parse(raw) as Presentation;
+        parsed = JSON.parse(unpacked) as Presentation;
       } catch {
         setSaveError("Saved presentation is not valid JSON.");
         return;
@@ -584,8 +587,9 @@ export default function ProtectedRoutes() {
         return;
       }
       let parsed: Presentation;
+      const unpacked = await deserializePresentation(raw);
       try {
-        parsed = JSON.parse(raw) as Presentation;
+        parsed = JSON.parse(unpacked) as Presentation;
       } catch {
         setListError("Saved presentation is not valid JSON.");
         return;
