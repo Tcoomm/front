@@ -84,8 +84,6 @@ export default function SlideList() {
 
     return (
         <div className={s.root} onMouseUp={onUp}>
-            <h3 className={s.title}>{t("slideList.title")}</h3>
-
             <div className={s.list}>
                 {slides.map((sl, i) => {
                     const active = sl.id === activeId || selectedIds.includes(sl.id);
@@ -108,10 +106,6 @@ export default function SlideList() {
                         >
                             <div className={s.thumb}>
                                 <SlideThumbnail slide={sl} />
-                            </div>
-                            <div className={s.meta}>
-                                <div className={s.name}>{sl.name ?? t("slideList.slide")} (#{i + 1})</div>
-                                <div className={s.id}>{t("slideList.id")}:  {sl.id}</div>
                             </div>
                         </div>
                     );

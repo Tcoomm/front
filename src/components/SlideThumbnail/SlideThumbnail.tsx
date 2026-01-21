@@ -4,8 +4,8 @@ import s from "./SlideThumbnail.module.css";
 
 const SLIDE_WIDTH = 1200;
 const SLIDE_HEIGHT = 675;
-const THUMB_WIDTH = 160;
-const THUMB_HEIGHT = 90;
+const THUMB_WIDTH = 210;
+const THUMB_HEIGHT = 118;
 
 type Props = {
   slide: Slide;

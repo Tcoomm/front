@@ -4,7 +4,7 @@ import type { Presentation } from "../../types";
 import { deserializePresentation } from "../serializePresentation";
 import { Query } from "../index";
 
-type PresentationListItem = { id: string; title: string; updatedAt: string };
+export type PresentationListItem = { id: string; title: string; updatedAt: string };
 
 type UsePresentationListOptions = {
   user: Models.User<Models.Preferences> | null;

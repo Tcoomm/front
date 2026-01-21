@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lab2": "npx tsx src/lab2.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "preso": "ts-node src/preso_demo.ts",

@@ -1,8 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Ajv from "ajv";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import type { Models } from "appwrite";
 import type { Presentation } from "../types";
 import { cloneElement, makeSlide, uid } from "../types";
 import {
@@ -25,21 +23,18 @@ import {
 } from "../store";
 import {
   appwriteConfigured,
-  ID,
   databases,
   storage,
   databaseId,
   presentationsCollectionId,
   bucketId,
-  Permission,
-  Role,
 } from "../appwrite";
-import { presentationSchema } from "../appwrite/schemas/presentationSchema";
 import DashboardPage from "../appwrite/components/DashboardPage";
 import EditorPage from "./EditorPage";
 import PlayerPage from "./PlayerPage";
 import { usePresentationList } from "../appwrite/hooks/usePresentationList";
 import { useAutoSave } from "../appwrite/hooks/useAutoSave";
+import { usePresentationStorage } from "../appwrite/hooks/usePresentationStorage";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 import { useEditorHotkeys } from "../hooks/useEditorHotkeys";
 import { useAuthContext } from "../appwrite/auth/AuthContext";
@@ -47,10 +42,6 @@ import { useI18n } from "../translations";
 import { downloadPresentationJson } from "../export/downloadPresentationJson";
 import { openPdfExport } from "../export/openPdfExport";
 import { parsePresentationJson, prepareImportedPresentation } from "../import/parsePresentationJson";
-import { deserializePresentation } from "../appwrite/serializePresentation";
-
-const ajv = new Ajv({ allErrors: true, strict: false });
-const validatePresentation = ajv.compile(presentationSchema);
 const SLIDE_WIDTH = 1200;
 const SLIDE_HEIGHT = 675;
 
@@ -73,7 +64,6 @@ export default function ProtectedRoutes() {
   const lastSavedRef = useRef<string>("");
   const modalModeRef = useRef<"create" | "rename">("create");
   const renameTargetRef = useRef<string | null>(null);
-  const loadingPresentationRef = useRef<string | null>(null);
   const lastRouteLoadRef = useRef<string | null>(null);
 
   const isDashboard = location.pathname === "/dashboard";
@@ -115,13 +105,35 @@ export default function ProtectedRoutes() {
     if (presentations.some((item) => item.id === dashboardSelectedId)) return;
     setDashboardSelectedId(null);
   }, [presentations, dashboardSelectedId]);
-  const getUserPermissions = useCallback(
-    (currentUser: Models.User<Models.Preferences>) => [
-      Permission.read(Role.user(currentUser.$id)),
-      Permission.write(Role.user(currentUser.$id)),
-    ],
-    []
-  );
+  const {
+    getUserPermissions,
+    getPresentationForExport,
+    uploadImage,
+    openPresentation,
+    renamePresentation,
+    deletePresentation,
+  } = usePresentationStorage({
+    user,
+    appwriteConfigured,
+    appwriteDataConfigured,
+    databases,
+    storage,
+    databaseId,
+    presentationsCollectionId,
+    bucketId,
+    t,
+    lang,
+    setSaveError,
+    setListError,
+    setPresentations,
+    setActivePresentationId,
+    activePresentationId,
+    lastSavedRef,
+    dispatchLoadPresentation: (next) => dispatch(loadPresentation(next)),
+    navigate,
+    isEditor,
+    isPlayer,
+  });
   const { playerIndex, setPlayerIndex, playerScale } = usePlayerControls({
     isPlayer,
     slides: presentation.slides,
@@ -178,35 +190,6 @@ export default function ProtectedRoutes() {
     downloadPresentationJson(presentation);
   }
 
-  async function getPresentationForExport(id: string) {
-    if (!appwriteConfigured || !appwriteDataConfigured) {
-      setListError(t("dashboard.notConfigured"));
-      return null;
-    }
-    try {
-      const doc = await databases.getDocument(databaseId!, presentationsCollectionId!, id);
-      const raw = (doc as { data?: string }).data;
-      if (typeof raw !== "string") {
-        setListError("Saved presentation is missing data.");
-        return null;
-      }
-      const unpacked = await deserializePresentation(raw);
-      const result = parsePresentationJson(unpacked, lang);
-      if (!result.ok) {
-        setListError(result.error);
-        return null;
-      }
-      if (result.presentation.ownerId && result.presentation.ownerId !== user?.$id) {
-        setListError("You are not authorized to open this presentation.");
-        return null;
-      }
-      return result.presentation;
-    } catch (err) {
-      setListError(getErrorMessage(err));
-      return null;
-    }
-  }
-
   async function onDashboardExportPdf() {
     if (!dashboardSelectedId) return;
     const pres = await getPresentationForExport(dashboardSelectedId);
@@ -241,27 +224,6 @@ export default function ProtectedRoutes() {
     }
     dispatch(loadPresentation(imported));
     navigate(`/editor/${imported.id}`);
-  }
-
-  async function uploadImage(file: File): Promise<string | null> {
-    if (!user) {
-      setSaveError(t("upload.signIn"));
-      return null;
-    }
-    if (!appwriteDataConfigured) {
-      setSaveError(t("upload.notConfigured"));
-      return null;
-    }
-    setSaveError(null);
-    try {
-      const permissions = getUserPermissions(user);
-      const created = await storage.createFile(bucketId!, ID.unique(), file, permissions);
-      const src = storage.getFileView(bucketId!, created.$id);
-      return String(src);
-    } catch (err) {
-      setSaveError(getErrorMessage(err));
-      return null;
-    }
   }
 
   function getSelectedImageId() {
@@ -370,7 +332,6 @@ export default function ProtectedRoutes() {
     if (!routePresentationId) return;
     if (!user || !appwriteConfigured || !appwriteDataConfigured) return;
     if (routePresentationId === currentPresentationId) return;
-    if (loadingPresentationRef.current === routePresentationId) return;
     if (lastRouteLoadRef.current === routePresentationId) return;
     lastRouteLoadRef.current = routePresentationId;
     setRestoring(true);
@@ -440,13 +401,6 @@ export default function ProtectedRoutes() {
     return () => window.removeEventListener("keydown", onKey);
   }, [dispatch, user]);
 
-  function getErrorMessage(err: unknown) {
-    if (err && typeof err === "object" && "message" in err) {
-      return String((err as { message?: unknown }).message ?? "Unknown error");
-    }
-    return "Unknown error";
-  }
-
   useEditorHotkeys({
     isEditor,
     slides: presentation.slides,
@@ -490,55 +444,6 @@ export default function ProtectedRoutes() {
     };
   }
 
-  async function openPresentation(id: string) {
-    if (!appwriteConfigured || !appwriteDataConfigured) return;
-    setSaveError(null);
-    try {
-      loadingPresentationRef.current = id;
-      const doc = await databases.getDocument(databaseId!, presentationsCollectionId!, id);
-      const raw = (doc as { data?: string }).data;
-      if (typeof raw !== "string") {
-        setSaveError("Saved presentation is missing data.");
-        return;
-      }
-      let parsed: Presentation;
-      const unpacked = await deserializePresentation(raw);
-      try {
-        parsed = JSON.parse(unpacked) as Presentation;
-      } catch {
-        setSaveError("Saved presentation is not valid JSON.");
-        return;
-      }
-      if (!validatePresentation(parsed)) {
-        setSaveError("Saved presentation failed validation.");
-        return;
-      }
-      if (parsed.ownerId && parsed.ownerId !== user?.$id) {
-        setSaveError("You are not authorized to open this presentation.");
-        return;
-      }
-      if (!parsed.ownerId && user) {
-        parsed.ownerId = user.$id;
-      }
-      parsed.id = doc.$id;
-      lastSavedRef.current = "";
-      setActivePresentationId(doc.$id);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("presentationId", doc.$id);
-      }
-      dispatch(loadPresentation(parsed));
-      if (!isEditor && !isPlayer) {
-        navigate(`/editor/${doc.$id}`);
-      }
-    } catch (err) {
-      setSaveError(getErrorMessage(err));
-    } finally {
-      if (loadingPresentationRef.current === id) {
-        loadingPresentationRef.current = null;
-      }
-    }
-  }
-
   function openCreateModal() {
     modalModeRef.current = "create";
     renameTargetRef.current = null;
@@ -573,58 +478,18 @@ export default function ProtectedRoutes() {
   }
 
   async function handleRename() {
-    if (!appwriteConfigured || !appwriteDataConfigured) return;
     const id = renameTargetRef.current;
     if (!id) return;
     const title = newTitle.trim();
     if (!title) return;
-    setListError(null);
-    try {
-      const doc = await databases.getDocument(databaseId!, presentationsCollectionId!, id);
-      const raw = (doc as { data?: string }).data;
-      if (typeof raw !== "string") {
-        setListError("Saved presentation is missing data.");
-        return;
-      }
-      let parsed: Presentation;
-      const unpacked = await deserializePresentation(raw);
-      try {
-        parsed = JSON.parse(unpacked) as Presentation;
-      } catch {
-        setListError("Saved presentation is not valid JSON.");
-        return;
-      }
-      if (!parsed.ownerId && user) {
-        parsed.ownerId = user.$id;
-      }
-      parsed.id = doc.$id;
-      parsed.title = title;
-      const payload = JSON.stringify(parsed);
-      await databases.updateDocument(databaseId!, presentationsCollectionId!, id, { data: payload });
-      setPresentations((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, title } : item))
-      );
+    const ok = await renamePresentation(id, title);
+    if (ok) {
       closeModal();
-    } catch (err) {
-      setListError(getErrorMessage(err));
     }
   }
 
   async function handleDelete(id: string) {
-    if (!appwriteConfigured || !appwriteDataConfigured) return;
-    setListError(null);
-    try {
-      await databases.deleteDocument(databaseId!, presentationsCollectionId!, id);
-      setPresentations((prev) => prev.filter((item) => item.id !== id));
-      if (activePresentationId === id) {
-        setActivePresentationId(null);
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("presentationId");
-        }
-      }
-    } catch (err) {
-      setListError(getErrorMessage(err));
-    }
+    await deletePresentation(id);
   }
 
   function formatUpdatedAt(value: string) {
