@@ -69,7 +69,7 @@ export function usePresentationStorage({
       Permission.read(Role.user(currentUser.$id)),
       Permission.write(Role.user(currentUser.$id)),
     ],
-    []
+    [],
   );
 
   const getPresentationForExport = useCallback(
@@ -111,7 +111,7 @@ export function usePresentationStorage({
       lang,
       setListError,
       user,
-    ]
+    ],
   );
 
   const uploadImage = useCallback(
@@ -135,7 +135,7 @@ export function usePresentationStorage({
         return null;
       }
     },
-    [user, appwriteDataConfigured, storage, bucketId, getUserPermissions, setSaveError, t]
+    [user, appwriteDataConfigured, storage, bucketId, getUserPermissions, setSaveError, t],
   );
 
   const openPresentation = useCallback(
@@ -196,7 +196,7 @@ export function usePresentationStorage({
       isEditor,
       isPlayer,
       navigate,
-    ]
+    ],
   );
 
   const renamePresentation = useCallback(
@@ -224,9 +224,11 @@ export function usePresentationStorage({
         parsed.id = doc.$id;
         parsed.title = title;
         const payload = await serializePresentation(JSON.stringify(parsed));
-        await databases.updateDocument(databaseId!, presentationsCollectionId!, id, { data: payload });
+        await databases.updateDocument(databaseId!, presentationsCollectionId!, id, {
+          data: payload,
+        });
         setPresentations((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, title } : item))
+          prev.map((item) => (item.id === id ? { ...item, title } : item)),
         );
         return true;
       } catch (err) {
@@ -243,7 +245,7 @@ export function usePresentationStorage({
       setListError,
       user,
       setPresentations,
-    ]
+    ],
   );
 
   const deletePresentation = useCallback(
@@ -273,7 +275,7 @@ export function usePresentationStorage({
       setPresentations,
       activePresentationId,
       setActivePresentationId,
-    ]
+    ],
   );
 
   return {

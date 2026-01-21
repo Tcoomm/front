@@ -76,9 +76,7 @@ export function useEditorHotkeys({
         }
       }
 
-      const idx = activeSlideId
-        ? slides.findIndex((s) => s.id === activeSlideId)
-        : -1;
+      const idx = activeSlideId ? slides.findIndex((s) => s.id === activeSlideId) : -1;
 
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         if (!slides.length) return;
@@ -91,7 +89,11 @@ export function useEditorHotkeys({
         if (!slides.length) return;
         e.preventDefault();
         const next =
-          idx < 0 ? slides[0] : idx < slides.length - 1 ? slides[idx + 1] : slides[slides.length - 1];
+          idx < 0
+            ? slides[0]
+            : idx < slides.length - 1
+              ? slides[idx + 1]
+              : slides[slides.length - 1];
         if (next) onSelectSlide(next.id);
       }
     }

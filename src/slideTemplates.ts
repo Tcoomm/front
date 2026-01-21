@@ -86,9 +86,7 @@ export const slideTemplates: SlideTemplate[] = [
     id: "section-header",
     label: "Section Header",
     build: () =>
-      namedSlide("Section Header", [
-        textEl("Section title", 120, 260, 960, 120, 64, "#0f172a"),
-      ]),
+      namedSlide("Section Header", [textEl("Section title", 120, 260, 960, 120, 64, "#0f172a")]),
   },
   {
     id: "two-objects",
@@ -117,10 +115,7 @@ export const slideTemplates: SlideTemplate[] = [
   {
     id: "title-only",
     label: "Title Only",
-    build: () =>
-      namedSlide("Title Only", [
-        textEl("Title", 120, 120, 960, 120, 76),
-      ]),
+    build: () => namedSlide("Title Only", [textEl("Title", 120, 120, 960, 120, 76)]),
   },
   {
     id: "blank",

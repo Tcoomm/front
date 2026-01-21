@@ -84,10 +84,7 @@ export default function EditorPage({
         <button className="auth-ghost" onClick={onDashboard}>
           {t("editor.dashboard")}
         </button>
-        <button
-          className="auth-ghost"
-          onClick={() => setLang(lang === "ru" ? "en" : "ru")}
-        >
+        <button className="auth-ghost" onClick={() => setLang(lang === "ru" ? "en" : "ru")}>
           {t("lang.toggle")}
         </button>
 
@@ -114,5 +111,3 @@ export default function EditorPage({
     </div>
   );
 }
-
-

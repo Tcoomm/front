@@ -1,151 +1,153 @@
 .root {
-    display: flex;
-    gap: 8px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    align-items: center;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .root::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .compact {
-    gap: 6px;
+  gap: 6px;
 }
 
 .btn {
-    padding: 6px 12px;
-    font-size: 13px;
-    border-radius: 10px;
-    background: #1e293b;
-    color: #e2e8f0;
-    border: 1px solid #243047;
-    cursor: pointer;
-    transition: 0.15s ease;
-    white-space: nowrap;
-    flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #243047;
+  cursor: pointer;
+  transition: 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .compact .btn {
-    padding: 5px 10px;
-    font-size: 12px;
+  padding: 5px 10px;
+  font-size: 12px;
 }
 
 .btn:hover {
-    background: #283652;
-    border-color: #334155;
+  background: #283652;
+  border-color: #334155;
 }
 
 .btnPrimary {
-    padding: 6px 12px;
-    font-size: 13px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #60a5fa, #7c3aed);
-    color: #0b1020;
-    border: 1px solid #60a5fa;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(96, 165, 250, 0.3);
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
-    white-space: nowrap;
-    flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #60a5fa, #7c3aed);
+  color: #0b1020;
+  border: 1px solid #60a5fa;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(96, 165, 250, 0.3);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .compact .btnPrimary {
-    padding: 5px 10px;
-    font-size: 12px;
+  padding: 5px 10px;
+  font-size: 12px;
 }
 
 .btnPrimary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 30px rgba(96, 165, 250, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(96, 165, 250, 0.35);
 }
 
 .fileBtn {
-    position: relative;
-    overflow: hidden;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 12px;
-    font-size: 13px;
-    border-radius: 10px;
-    background: #1e293b;
-    color: #e2e8f0;
-    border: 1px dashed #334155;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px dashed #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .compact .fileBtn {
-    padding: 5px 10px;
-    font-size: 12px;
+  padding: 5px 10px;
+  font-size: 12px;
 }
 
 .fileInput {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .colorGroup {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .colorInput {
-    width: 42px;
-    height: 36px;
-    padding: 0;
-    border: 1px solid #243047;
-    border-radius: 8px;
-    background: #0f172a;
-    flex-shrink: 0;
+  width: 42px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #243047;
+  border-radius: 8px;
+  background: #0f172a;
+  flex-shrink: 0;
 }
 
 .compact .colorInput {
-    width: 36px;
-    height: 30px;
+  width: 36px;
+  height: 30px;
 }
 
 .alignWrap {
-    position: relative;
-    display: inline-flex;
-    flex-shrink: 0;
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 .alignMenu {
-    position: fixed;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    background: #0f172a;
-    border: 1px solid #243047;
-    border-radius: 10px;
-    z-index: 20;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #0f172a;
+  border: 1px solid #243047;
+  border-radius: 10px;
+  z-index: 20;
 }
 
 .alignItem {
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: #1e293b;
-    color: #e2e8f0;
-    border: 1px solid #243047;
-    cursor: pointer;
-    font-size: 12px;
-    text-align: left;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #243047;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
 }
 
 .alignItem:hover {
-    background: #283652;
-    border-color: #334155;
+  background: #283652;
+  border-color: #334155;
 }

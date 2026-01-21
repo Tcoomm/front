@@ -23,9 +23,7 @@ export function usePlayerControls({
 
   useEffect(() => {
     if (!isPlayer) return;
-    const idx = selectionSlideId
-      ? slides.findIndex((s) => s.id === selectionSlideId)
-      : 0;
+    const idx = selectionSlideId ? slides.findIndex((s) => s.id === selectionSlideId) : 0;
     setPlayerIndex(idx >= 0 ? idx : 0);
   }, [isPlayer, selectionSlideId, slides]);
 

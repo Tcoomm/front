@@ -41,7 +41,10 @@ import { useAuthContext } from "../appwrite/auth/AuthContext";
 import { useI18n } from "../translations";
 import { downloadPresentationJson } from "../export/downloadPresentationJson";
 import { openPdfExport } from "../export/openPdfExport";
-import { parsePresentationJson, prepareImportedPresentation } from "../import/parsePresentationJson";
+import {
+  parsePresentationJson,
+  prepareImportedPresentation,
+} from "../import/parsePresentationJson";
 const SLIDE_WIDTH = 1200;
 const SLIDE_HEIGHT = 675;
 
@@ -74,32 +77,28 @@ export default function ProtectedRoutes() {
   const currentPresentationId = activePresentationId || presentation.id || null;
   const effectivePresentationId = routePresentationId || currentPresentationId || null;
   const hasPresentation = Boolean(currentPresentationId || routePresentationId);
-  const storedPresentationId = typeof window !== "undefined" ? localStorage.getItem("presentationId") : null;
+  const storedPresentationId =
+    typeof window !== "undefined" ? localStorage.getItem("presentationId") : null;
   const editorRoute = effectivePresentationId ? `/editor/${effectivePresentationId}` : "/editor";
   const playerRoute = effectivePresentationId ? `/player/${effectivePresentationId}` : "/player";
 
   const activeSlide = useMemo(() => {
     const id = presentation.selection.slideId;
-    return id ? presentation.slides.find((s) => s.id === id) ?? null : null;
+    return id ? (presentation.slides.find((s) => s.id === id) ?? null) : null;
   }, [presentation]);
 
   const selectedIds = presentation.selection.elementIds;
   const appwriteDataConfigured = Boolean(databaseId && presentationsCollectionId && bucketId);
-  const {
-    presentations,
-    setPresentations,
-    listLoading,
-    listError,
-    setListError,
-  } = usePresentationList({
-    user,
-    isDashboard,
-    appwriteConfigured,
-    appwriteDataConfigured,
-    databases,
-    databaseId,
-    presentationsCollectionId,
-  });
+  const { presentations, setPresentations, listLoading, listError, setListError } =
+    usePresentationList({
+      user,
+      isDashboard,
+      appwriteConfigured,
+      appwriteDataConfigured,
+      databases,
+      databaseId,
+      presentationsCollectionId,
+    });
   useEffect(() => {
     if (!dashboardSelectedId) return;
     if (presentations.some((item) => item.id === dashboardSelectedId)) return;
@@ -170,7 +169,7 @@ export default function ProtectedRoutes() {
     if (!activeSlide) return;
     if (activeSlide.elements.length) {
       const ok = window.confirm(
-        `Delete slide "${activeSlide.name ?? "Slide"}" with ${activeSlide.elements.length} elements?`
+        `Delete slide "${activeSlide.name ?? "Slide"}" with ${activeSlide.elements.length} elements?`,
       );
       if (!ok) return;
     }
@@ -180,14 +179,6 @@ export default function ProtectedRoutes() {
   function onAddText() {
     if (!activeSlide) return;
     dispatch(addText({ slideId: activeSlide.id, text: "Title" }));
-  }
-
-  function onExportPdf() {
-    openPdfExport(presentation, SLIDE_WIDTH, SLIDE_HEIGHT);
-  }
-
-  function onExportJson() {
-    downloadPresentationJson(presentation);
   }
 
   async function onDashboardExportPdf() {
@@ -226,15 +217,6 @@ export default function ProtectedRoutes() {
     navigate(`/editor/${imported.id}`);
   }
 
-  function getSelectedImageId() {
-    if (!activeSlide) return null;
-    for (const id of selectedIds) {
-      const el = activeSlide.elements.find((item) => item.id === id && item.kind === "image");
-      if (el) return el.id;
-    }
-    return null;
-  }
-
   async function onAddImage(file: File) {
     if (!activeSlide) return;
     const srcString = await uploadImage(file);
@@ -269,7 +251,6 @@ export default function ProtectedRoutes() {
     if (!srcString) return;
     dispatch(updateImageSrc({ slideId: activeSlide.id, elId, src: srcString }));
   }
-
 
   function onDeleteElement() {
     if (!activeSlide || selectedIds.length === 0) return;
@@ -313,7 +294,9 @@ export default function ProtectedRoutes() {
     if (!activeSlide) return;
     const srcString = await uploadImage(file);
     if (!srcString) return;
-    dispatch(setSlideBackground({ slideId: activeSlide.id, bg: { kind: "image", src: srcString } }));
+    dispatch(
+      setSlideBackground({ slideId: activeSlide.id, bg: { kind: "image", src: srcString } }),
+    );
   }
 
   useEffect(() => {
@@ -340,13 +323,7 @@ export default function ProtectedRoutes() {
       setRestoring(false);
     };
     void load();
-  }, [
-    routePresentationId,
-    user,
-    appwriteConfigured,
-    appwriteDataConfigured,
-    currentPresentationId,
-  ]);
+  }, [routePresentationId, user, appwriteDataConfigured, currentPresentationId, openPresentation]);
 
   useEffect(() => {
     if (!user || !appwriteConfigured || !appwriteDataConfigured) return;
@@ -366,12 +343,13 @@ export default function ProtectedRoutes() {
     };
   }, [
     user,
-    appwriteConfigured,
     appwriteDataConfigured,
     isEditor,
     isPlayer,
+    routePresentationId,
     activePresentationId,
     storedPresentationId,
+    openPresentation,
   ]);
 
   useEffect(() => {
@@ -505,9 +483,7 @@ export default function ProtectedRoutes() {
       <div className="auth-page">
         <div className="auth-card">
           <h1 className="auth-title">{t("auth.notConfigured.title")}</h1>
-          <p className="auth-note">
-            {t("auth.notConfigured.note")}
-          </p>
+          <p className="auth-note">{t("auth.notConfigured.note")}</p>
         </div>
       </div>
     );
@@ -641,5 +617,3 @@ export default function ProtectedRoutes() {
     </Routes>
   );
 }
-
-

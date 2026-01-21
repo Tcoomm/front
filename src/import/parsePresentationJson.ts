@@ -5,9 +5,7 @@ import { makeSlide, uid, type Presentation } from "../types";
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validatePresentation = ajv.compile(presentationSchema);
 
-type ParseResult =
-  | { ok: true; presentation: Presentation }
-  | { ok: false; error: string };
+type ParseResult = { ok: true; presentation: Presentation } | { ok: false; error: string };
 
 export function parsePresentationJson(payload: string, lang: "ru" | "en"): ParseResult {
   let parsed: Presentation;

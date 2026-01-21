@@ -16,7 +16,7 @@ function escapeHtml(value: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -56,9 +56,7 @@ function renderElement(el: SlideElement) {
           fontStyle: isRich ? "normal" : el.italic ? "italic" : "normal",
           textDecoration: isRich ? "none" : el.underline ? "underline" : "none",
           border:
-            el.borderWidth > 0
-              ? `${el.borderWidth}px solid ${el.borderColor ?? "#111"}`
-              : "none",
+            el.borderWidth > 0 ? `${el.borderWidth}px solid ${el.borderColor ?? "#111"}` : "none",
         }}
       >
         <div

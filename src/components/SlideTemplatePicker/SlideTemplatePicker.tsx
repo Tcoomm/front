@@ -29,11 +29,12 @@ export default function SlideTemplatePicker({ onAddTemplate, compact }: Props) {
           </option>
         ))}
       </select>
-      <button className={`${s.btn} ${compact ? s.compactBtn : ""}`} onClick={() => onAddTemplate(value)}>
+      <button
+        className={`${s.btn} ${compact ? s.compactBtn : ""}`}
+        onClick={() => onAddTemplate(value)}
+      >
         {t("slideTemplate.add")}
       </button>
     </div>
   );
 }
-
-

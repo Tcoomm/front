@@ -5,15 +5,11 @@ function escapeHtml(value: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
-export function buildPdfHtml(
-  presentation: Presentation,
-  slideWidth: number,
-  slideHeight: number,
-) {
+export function buildPdfHtml(presentation: Presentation, slideWidth: number, slideHeight: number) {
   const title = escapeHtml(presentation.title || "Presentation");
   const slideBlocks = presentation.slides
     .map((slide) => {
@@ -28,9 +24,7 @@ export function buildPdfHtml(
         .map((el) => {
           if (el.kind === "text") {
             const isRich = Boolean(el.isRichText) || /<[^>]+>/.test(el.content);
-            const content = isRich
-              ? el.content
-              : escapeHtml(el.content).replace(/\n/g, "<br/>");
+            const content = isRich ? el.content : escapeHtml(el.content).replace(/\n/g, "<br/>");
             const border =
               el.borderWidth && el.borderWidth > 0
                 ? `border:${el.borderWidth}px solid ${el.borderColor ?? "#111"};`

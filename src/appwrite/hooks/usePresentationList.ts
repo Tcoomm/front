@@ -37,7 +37,13 @@ export function usePresentationList({
   const [listError, setListError] = useState<string | null>(null);
 
   const loadList = useCallback(async () => {
-    if (!user || !appwriteConfigured || !appwriteDataConfigured || !databaseId || !presentationsCollectionId) {
+    if (
+      !user ||
+      !appwriteConfigured ||
+      !appwriteDataConfigured ||
+      !databaseId ||
+      !presentationsCollectionId
+    ) {
       return;
     }
     setListLoading(true);
@@ -58,11 +64,12 @@ export function usePresentationList({
               const parsed = JSON.parse(unpacked) as Presentation;
               if (typeof parsed.title === "string") title = parsed.title;
               if (typeof parsed.ownerId === "string") ownerId = parsed.ownerId;
-            } catch {
+            } catch (err) {
+              void err;
             }
           }
           return { id: doc.$id, title, updatedAt: doc.$updatedAt, ownerId };
-        })
+        }),
       );
       const filtered = next
         .filter((item) => !item.ownerId || item.ownerId === user.$id)
@@ -73,7 +80,14 @@ export function usePresentationList({
     } finally {
       setListLoading(false);
     }
-  }, [user, appwriteConfigured, appwriteDataConfigured, databaseId, presentationsCollectionId, databases]);
+  }, [
+    user,
+    appwriteConfigured,
+    appwriteDataConfigured,
+    databaseId,
+    presentationsCollectionId,
+    databases,
+  ]);
 
   useEffect(() => {
     if (!isDashboard) return;

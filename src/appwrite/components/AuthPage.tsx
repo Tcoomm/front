@@ -39,9 +39,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
       <div className="auth-page">
         <div className="auth-card">
           <h1 className="auth-title">{t("auth.notConfigured.title")}</h1>
-          <p className="auth-note">
-            {t("auth.notConfigured.note")}
-          </p>
+          <p className="auth-note">{t("auth.notConfigured.note")}</p>
         </div>
       </div>
     );
@@ -110,7 +108,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
                 />
                 <circle cx="12" cy="12" r="2" fill="currentColor" />
                 {!showPassword ? (
-                  <path d="M4 4l16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path
+                    d="M4 4l16 16"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 ) : null}
               </svg>
             </button>
@@ -121,8 +124,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
           {authBusy
             ? t("auth.pleaseWait")
             : authMode === "login"
-            ? t("auth.signIn")
-            : t("auth.register")}
+              ? t("auth.signIn")
+              : t("auth.register")}
         </button>
         <button
           className="auth-link"
@@ -139,5 +142,3 @@ export default function AuthPage({ mode }: AuthPageProps) {
     </div>
   );
 }
-
-

@@ -110,7 +110,7 @@ export function makeText(content = "Title"): TextElement {
     kind: "text",
     content,
     isRichText: false,
-    fontSize: DEFAULT_TEXT_FONT_SIZE,     // <-- фикс
+    fontSize: DEFAULT_TEXT_FONT_SIZE, // <-- фикс
     fontFamily: DEFAULT_TEXT_FONT_FAMILY, // <-- фикс
     color: "#111",
     backgroundColor: null,
@@ -120,8 +120,8 @@ export function makeText(content = "Title"): TextElement {
     bold: false,
     italic: false,
     underline: false,
-    position: { x: GAP, y: GAP },         // старт — но потом сместим автолейаутом
-    size: { ...DEFAULT_TEXT_SIZE },       // <-- фикс
+    position: { x: GAP, y: GAP }, // старт — но потом сместим автолейаутом
+    size: { ...DEFAULT_TEXT_SIZE }, // <-- фикс
   };
 }
 
@@ -131,7 +131,7 @@ export function makeImage(src: string): ImageElement {
     kind: "image",
     src,
     position: { x: GAP, y: GAP },
-    size: { ...DEFAULT_IMAGE_SIZE },      // <-- фикс
+    size: { ...DEFAULT_IMAGE_SIZE }, // <-- фикс
   };
 }
 

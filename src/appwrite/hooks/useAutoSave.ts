@@ -67,17 +67,24 @@ export function useAutoSave({
         try {
           const payload = await serializePresentation(rawPayload);
           try {
-            await databases.updateDocument(databaseId!, presentationsCollectionId!, presentationId, { // Обновляю документ, если он уже есть
-              data: payload,
-            });
+            await databases.updateDocument(
+              databaseId!,
+              presentationsCollectionId!,
+              presentationId,
+              {
+                // Обновляю документ, если он уже есть
+                data: payload,
+              },
+            );
           } catch (err) {
             if (isNotFound(err)) {
-              await databases.createDocument( // Если документа нет, создаю новый
+              await databases.createDocument(
+                // Если документа нет, создаю новый
                 databaseId!,
                 presentationsCollectionId!,
                 presentationId,
                 { data: payload },
-                permissions
+                permissions,
               );
             } else {
               throw err;
@@ -114,5 +121,3 @@ export function useAutoSave({
     lastSavedRef,
   ]);
 }
-
-

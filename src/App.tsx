@@ -11,13 +11,11 @@ export default function App() {
     <I18nProvider>
       <AuthProvider>
         <Routes>
-        <Route path="/login" element={<AuthPage mode="login" />} />
-        <Route path="/register" element={<AuthPage mode="register" />} />
-        <Route path="/*" element={<ProtectedRoutes />} />
+          <Route path="/login" element={<AuthPage mode="login" />} />
+          <Route path="/register" element={<AuthPage mode="register" />} />
+          <Route path="/*" element={<ProtectedRoutes />} />
         </Routes>
       </AuthProvider>
     </I18nProvider>
   );
 }
-
-

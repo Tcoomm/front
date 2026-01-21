@@ -29,7 +29,7 @@ export default function PlayerPage({
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
+      .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
   const playerBackground: React.CSSProperties = {};
@@ -101,9 +101,10 @@ export default function PlayerPage({
                                 : "none",
                           }}
                           dangerouslySetInnerHTML={{
-                            __html: el.isRichText || /<[^>]+>/.test(el.content)
-                              ? el.content
-                              : escapeHtml(el.content).replace(/\n/g, "<br/>"),
+                            __html:
+                              el.isRichText || /<[^>]+>/.test(el.content)
+                                ? el.content
+                                : escapeHtml(el.content).replace(/\n/g, "<br/>"),
                           }}
                         />
                       </div>
@@ -131,5 +132,3 @@ export default function PlayerPage({
     </div>
   );
 }
-
-

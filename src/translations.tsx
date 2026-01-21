@@ -93,7 +93,8 @@ const messages: Record<Lang, Dict> = {
     "dashboard.modal.create": "Создать",
     "dashboard.modal.save": "Сохранить",
     "auth.notConfigured.title": "Appwrite не настроен",
-    "auth.notConfigured.note": "Укажите VITE_APPWRITE_ENDPOINT и VITE_APPWRITE_PROJECT_ID в переменных окружения.",
+    "auth.notConfigured.note":
+      "Укажите VITE_APPWRITE_ENDPOINT и VITE_APPWRITE_PROJECT_ID в переменных окружения.",
     "auth.loadingSession": "Загрузка сессии...",
     "auth.signIn": "Вход",
     "auth.createAccount": "Создать аккаунт",
@@ -194,7 +195,8 @@ const messages: Record<Lang, Dict> = {
     "dashboard.modal.create": "Create",
     "dashboard.modal.save": "Save",
     "auth.notConfigured.title": "Appwrite is not configured",
-    "auth.notConfigured.note": "Set VITE_APPWRITE_ENDPOINT and VITE_APPWRITE_PROJECT_ID in your env.",
+    "auth.notConfigured.note":
+      "Set VITE_APPWRITE_ENDPOINT and VITE_APPWRITE_PROJECT_ID in your env.",
     "auth.loadingSession": "Loading session...",
     "auth.signIn": "Sign in",
     "auth.createAccount": "Create account",
@@ -217,7 +219,7 @@ const messages: Record<Lang, Dict> = {
 
 const I18nContext = createContext<I18nValue>({
   lang: "ru",
-  setLang: () => { },
+  setLang: () => {},
   t: (key: string) => key,
 });
 
